@@ -1,4 +1,3 @@
-
 name: Build JKT48 Universe APK
 
 on:
@@ -23,6 +22,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: Install Android SDK packages
         run: |
