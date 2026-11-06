@@ -1,5 +1,7 @@
+
 package com.zakss.jkt48universe
 
+import android.app.Activity
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -12,7 +14,6 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -21,7 +22,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 
 @UnstableApi
-class MainActivity : ComponentActivity() {
+class MainActivity : Activity() {
 
     private var player: ExoPlayer? = null
     private lateinit var root: FrameLayout
@@ -64,7 +65,12 @@ class MainActivity : ComponentActivity() {
             )
         )
 
-        val progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal)
+        val progress = ProgressBar(
+            this,
+            null,
+            android.R.attr.progressBarStyleHorizontal
+        )
+
         val progressParams = FrameLayout.LayoutParams(
             180,
             5,
@@ -72,6 +78,7 @@ class MainActivity : ComponentActivity() {
         ).apply {
             bottomMargin = 35
         }
+
         layout.addView(progress, progressParams)
 
         val exoPlayer = ExoPlayer.Builder(this).build()
@@ -85,6 +92,7 @@ class MainActivity : ComponentActivity() {
         )
 
         exoPlayer.addListener(object : Player.Listener {
+
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) {
                     releasePlayer()
@@ -92,7 +100,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            override fun onPlayerError(
+                error: androidx.media3.common.PlaybackException
+            ) {
                 Toast.makeText(
                     this@MainActivity,
                     "Video intro gagal: ${error.errorCodeName}",
@@ -152,7 +162,6 @@ class MainActivity : ComponentActivity() {
 
         header.addView(title)
         header.addView(subtitle)
-
         mainLayout.addView(header)
 
         // CONTENT
@@ -219,6 +228,7 @@ class MainActivity : ComponentActivity() {
                     "News" -> "Berita dan informasi terbaru."
                     else -> ""
                 }
+
                 textSize = 15f
                 setTextColor(Color.DKGRAY)
                 setPadding(0, 12, 0, 0)
@@ -235,7 +245,6 @@ class MainActivity : ComponentActivity() {
                 )
             )
 
-            // Home welcome card
             if (page == "Home") {
                 val card = TextView(this).apply {
                     text = "🌸  Welcome to JKT48 Universe\n\nNikmati dunia JKT48 dalam satu aplikasi."
@@ -265,6 +274,7 @@ class MainActivity : ComponentActivity() {
                 setPadding(12, 5, 12, 5)
                 isClickable = true
                 isFocusable = true
+
                 setOnClickListener {
                     showPage(page)
                     Toast.makeText(
@@ -324,4 +334,3 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 }
-
