@@ -1,4 +1,3 @@
-
 package com.zakss.jkt48universe
 
 import android.app.Activity
@@ -64,14 +63,10 @@ class MainActivity : Activity() {
         introFinished = false
         root.removeAllViews()
 
-        // FULLSCREEN
-        window.decorView.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        // ORIGINAL SCREEN MODE
+        window.decorView.systemUiVisibility = 0
+        window.statusBarColor = dark
+        window.navigationBarColor = dark
 
         val layout = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
@@ -88,11 +83,7 @@ class MainActivity : Activity() {
         // VIDEO VIEW
         val videoView = PlayerView(this).apply {
             useController = false
-
-            // Fill screen without black letterbox.
-            // Some edges may be cropped to preserve aspect ratio.
-            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-
+            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             keepScreenOn = true
         }
 
@@ -108,11 +99,12 @@ class MainActivity : Activity() {
         val processPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
+
             setPadding(
                 dp(22),
-                dp(14),
+                dp(12),
                 dp(22),
-                dp(14)
+                dp(12)
             )
 
             background = makeBackground(
@@ -121,51 +113,18 @@ class MainActivity : Activity() {
             )
         }
 
-        // PROCESS TEXT
+        // PROCESS ROW
+        val processRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
         val processText = TextView(this).apply {
             text = "Process"
             textSize = 14f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
         }
-
-        processPanel.addView(
-            processText,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(24)
-            )
-        )
-
-        // PROGRESS BAR
-        val progress = ProgressBar(
-            this,
-            null,
-            android.R.attr.progressBarStyleHorizontal
-        ).apply {
-            max = 1000
-            progress = 0
-
-            progressTintList =
-                android.content.res.ColorStateList.valueOf(pink)
-
-            progressBackgroundTintList =
-                android.content.res.ColorStateList.valueOf(
-                    Color.rgb(110, 75, 95)
-                )
-        }
-
-        processPanel.addView(
-            progress,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(5)
-            ).apply {
-                topMargin = dp(12)
-                bottomMargin = dp(14)
-            }
-        )
 
         // LIQUID GLASS BACKGROUND
         val skipGlass = GradientDrawable(
@@ -193,9 +152,9 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
 
             setPadding(
-                dp(24),
+                dp(18),
                 dp(9),
-                dp(24),
+                dp(18),
                 dp(9)
             )
 
@@ -236,15 +195,55 @@ class MainActivity : Activity() {
             }
         }
 
-        processPanel.addView(
-            skipButton,
+        // PROCESS LEFT, SKIP RIGHT
+        processRow.addView(
+            processText,
             LinearLayout.LayoutParams(
+                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        )
+
+        processRow.addView(skipButton)
+
+        processPanel.addView(
+            processRow,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
 
-        // PANEL AT BOTTOM CENTER
+        // PROGRESS BAR
+        val progress = ProgressBar(
+            this,
+            null,
+            android.R.attr.progressBarStyleHorizontal
+        ).apply {
+            max = 1000
+            progress = 0
+
+            progressTintList =
+                android.content.res.ColorStateList.valueOf(pink)
+
+            progressBackgroundTintList =
+                android.content.res.ColorStateList.valueOf(
+                    Color.rgb(110, 75, 95)
+                )
+        }
+
+        processPanel.addView(
+            progress,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(5)
+            ).apply {
+                topMargin = dp(12)
+            }
+        )
+
+        // PANEL BOTTOM CENTER
         val panelParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -455,7 +454,7 @@ class MainActivity : Activity() {
             )
         )
 
-        // BOTTOM NAVIGATION CONTAINER
+        // BOTTOM NAVIGATION
         val navContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.WHITE)
@@ -776,3 +775,4 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 }
+
