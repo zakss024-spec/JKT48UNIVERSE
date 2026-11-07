@@ -7,7 +7,10 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
@@ -27,6 +30,10 @@ class MainActivity : Activity() {
 
     private var player: ExoPlayer? = null
     private lateinit var root: FrameLayout
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var progressRunnable: Runnable? = null
+    private var introFinished = false
 
     private val pink = Color.rgb(238, 91, 158)
     private val dark = Color.rgb(35, 25, 42)
@@ -50,11 +57,20 @@ class MainActivity : Activity() {
     }
 
     private fun showIntro() {
+        introFinished = false
         root.removeAllViews()
 
-        val layout = FrameLayout(this)
-        layout.setBackgroundColor(Color.BLACK)
-        root.addView(layout)
+        val layout = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+        }
+
+        root.addView(
+            layout,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
 
         val videoView = PlayerView(this).apply {
             useController = false
@@ -70,38 +86,165 @@ class MainActivity : Activity() {
             )
         )
 
+        // PROCESS PANEL
+        val processPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(22), dp(12), dp(22), dp(12))
+            background = makeBackground(
+                Color.argb(175, 25, 15, 30),
+                16
+            )
+        }
+
+        val processRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        val processText = TextView(this).apply {
+            text = "Process"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        // LIQUID GLASS SKIP BUTTON
+        val skipGlass = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                Color.argb(105, 255, 255, 255),
+                Color.argb(35, 255, 255, 255),
+                Color.argb(85, 238, 91, 158)
+            )
+        ).apply {
+            cornerRadius = dp(30).toFloat()
+            setStroke(
+                dp(1),
+                Color.argb(180, 255, 255, 255)
+            )
+        }
+
+        val skipButton = TextView(this).apply {
+            text = "SKIP  ›"
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setPadding(dp(18), dp(9), dp(18), dp(9))
+
+            background = skipGlass
+            elevation = dp(6).toFloat()
+
+            isClickable = true
+            isFocusable = true
+
+            setOnTouchListener { view, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        view.animate()
+                            .scaleX(0.94f)
+                            .scaleY(0.94f)
+                            .alpha(0.8f)
+                            .setDuration(100)
+                            .start()
+                    }
+
+                    MotionEvent.ACTION_UP,
+                    MotionEvent.ACTION_CANCEL -> {
+                        view.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .alpha(1f)
+                            .setDuration(150)
+                            .start()
+                    }
+                }
+                false
+            }
+
+            setOnClickListener {
+                finishIntro()
+            }
+        }
+
+        processRow.addView(
+            processText,
+            LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        )
+
+        processRow.addView(skipButton)
+
+        processPanel.addView(
+            processRow,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        // PROGRESS BAR
         val progress = ProgressBar(
             this,
             null,
             android.R.attr.progressBarStyleHorizontal
-        )
-
-        val progressParams = FrameLayout.LayoutParams(
-            dp(180),
-            dp(5),
-            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
         ).apply {
-            bottomMargin = dp(35)
+            max = 1000
+            progress = 0
+            progressTintList =
+                android.content.res.ColorStateList.valueOf(pink)
+            progressBackgroundTintList =
+                android.content.res.ColorStateList.valueOf(
+                    Color.rgb(110, 75, 95)
+                )
         }
 
-        layout.addView(progress, progressParams)
+        processPanel.addView(
+            progress,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(5)
+            ).apply {
+                topMargin = dp(12)
+            }
+        )
 
+        val panelParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM
+        ).apply {
+            setMargins(dp(20), 0, dp(20), dp(35))
+        }
+
+        layout.addView(processPanel, panelParams)
+
+        // EXOPLAYER
         val exoPlayer = ExoPlayer.Builder(this).build()
         player = exoPlayer
         videoView.player = exoPlayer
 
         exoPlayer.setMediaItem(
             MediaItem.fromUri(
-                Uri.parse("android.resource://$packageName/${R.raw.intro}")
+                Uri.parse(
+                    "android.resource://$packageName/${R.raw.intro}"
+                )
             )
         )
 
         exoPlayer.addListener(object : Player.Listener {
 
             override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_READY) {
+                    startProgressUpdater(progress)
+                }
+
                 if (state == Player.STATE_ENDED) {
-                    releasePlayer()
-                    showHome()
+                    finishIntro()
                 }
             }
 
@@ -114,8 +257,7 @@ class MainActivity : Activity() {
                     Toast.LENGTH_LONG
                 ).show()
 
-                releasePlayer()
-                showHome()
+                finishIntro()
             }
         })
 
@@ -123,7 +265,50 @@ class MainActivity : Activity() {
         exoPlayer.playWhenReady = true
     }
 
+    private fun startProgressUpdater(progress: ProgressBar) {
+        stopProgressUpdater()
+
+        val runnable = object : Runnable {
+            override fun run() {
+                val currentPlayer = player ?: return
+                val duration = currentPlayer.duration
+                val position = currentPlayer.currentPosition
+
+                if (duration > 0) {
+                    progress.progress = (
+                        position.toDouble() /
+                            duration.toDouble() * 1000
+                    ).toInt().coerceIn(0, 1000)
+                }
+
+                if (!introFinished) {
+                    handler.postDelayed(this, 100)
+                }
+            }
+        }
+
+        progressRunnable = runnable
+        handler.post(runnable)
+    }
+
+    private fun stopProgressUpdater() {
+        progressRunnable?.let {
+            handler.removeCallbacks(it)
+        }
+        progressRunnable = null
+    }
+
+    private fun finishIntro() {
+        if (introFinished) return
+
+        introFinished = true
+        stopProgressUpdater()
+        releasePlayer()
+        showHome()
+    }
+
     private fun releasePlayer() {
+        stopProgressUpdater()
         player?.release()
         player = null
     }
