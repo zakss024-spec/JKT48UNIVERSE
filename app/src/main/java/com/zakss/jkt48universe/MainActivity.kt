@@ -789,7 +789,7 @@ class MainActivity : Activity() {
         val searchBox = EditText(this).apply {
             hint = "Cari nama member..."
             textSize = 14f
-            singleLine = true
+            setSingleLine = true
             setTextColor(dark)
             setHintTextColor(Color.GRAY)
             setPadding(dp(15), dp(13), dp(15), dp(13))
