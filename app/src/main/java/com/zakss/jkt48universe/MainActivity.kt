@@ -193,7 +193,7 @@ class MainActivity : Activity() {
             )
         )
 
-        // BOTTOM NAVIGATION CONTAINER
+        // BOTTOM NAVIGATION
         val navContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.WHITE)
@@ -203,7 +203,6 @@ class MainActivity : Activity() {
         val bottomScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
             overScrollMode = View.OVER_SCROLL_NEVER
-            fillViewport = false
         }
 
         val bottomMenu = LinearLayout(this).apply {
@@ -227,7 +226,6 @@ class MainActivity : Activity() {
         fun showPage(page: String) {
             content.removeAllViews()
 
-            // PAGE LAYOUT
             val pageLayout = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.TOP
@@ -288,15 +286,13 @@ class MainActivity : Activity() {
                 )
             )
 
-            // UPDATE ACTIVE NAVIGATION
+            // ACTIVE NAVIGATION STYLE
             navButtons.forEach { (name, button) ->
                 val active = name == page
 
-                button.setBackground(
-                    makeBackground(
-                        if (active) palePink else Color.TRANSPARENT,
-                        14
-                    )
+                button.background = makeBackground(
+                    if (active) palePink else Color.TRANSPARENT,
+                    14
                 )
 
                 val icon = button.getChildAt(0) as TextView
@@ -305,6 +301,7 @@ class MainActivity : Activity() {
 
                 icon.setTextColor(if (active) pink else dark)
                 label.setTextColor(if (active) pink else Color.DKGRAY)
+
                 label.typeface = if (active) {
                     Typeface.DEFAULT_BOLD
                 } else {
@@ -316,7 +313,7 @@ class MainActivity : Activity() {
             }
         }
 
-        // CREATE NAVIGATION BUTTONS
+        // CREATE MENU BUTTONS
         menuItems.forEach { item ->
             val (icon, label, page) = item
 
@@ -326,13 +323,11 @@ class MainActivity : Activity() {
                 setPadding(dp(5), dp(7), dp(5), dp(5))
                 isClickable = true
                 isFocusable = true
-                background = makeBackground(
-                    Color.TRANSPARENT,
-                    14
-                )
+                background = makeBackground(Color.TRANSPARENT, 14)
 
                 setOnClickListener {
                     showPage(page)
+
                     Toast.makeText(
                         this@MainActivity,
                         page,
@@ -358,7 +353,7 @@ class MainActivity : Activity() {
             }
 
             val indicator = View(this).apply {
-                setBackground(makeBackground(pink, 10))
+                background = makeBackground(pink, 10)
                 visibility = View.INVISIBLE
             }
 
