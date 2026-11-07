@@ -4,6 +4,7 @@ package com.zakss.jkt48universe
 import android.app.Activity
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
@@ -30,6 +31,10 @@ class MainActivity : Activity() {
     private val pink = Color.rgb(238, 91, 158)
     private val dark = Color.rgb(35, 25, 42)
     private val light = Color.rgb(255, 244, 250)
+    private val palePink = Color.rgb(255, 225, 240)
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,11 +77,11 @@ class MainActivity : Activity() {
         )
 
         val progressParams = FrameLayout.LayoutParams(
-            180,
-            5,
+            dp(180),
+            dp(5),
             Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
         ).apply {
-            bottomMargin = 35
+            bottomMargin = dp(35)
         }
 
         layout.addView(progress, progressParams)
@@ -123,6 +128,16 @@ class MainActivity : Activity() {
         player = null
     }
 
+    private fun makeBackground(
+        color: Int,
+        radius: Int
+    ): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+        }
+    }
+
     private fun showHome() {
         root.removeAllViews()
         root.setBackgroundColor(light)
@@ -143,20 +158,20 @@ class MainActivity : Activity() {
         // HEADER
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 22, 20, 18)
+            setPadding(dp(22), dp(22), dp(22), dp(20))
             setBackgroundColor(pink)
         }
 
         val title = TextView(this).apply {
             text = "JKT48 Universe"
-            textSize = 25f
+            textSize = 26f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
         }
 
         val subtitle = TextView(this).apply {
             text = "Your world of idols ✨"
-            textSize = 13f
+            textSize = 14f
             setTextColor(Color.WHITE)
         }
 
@@ -178,17 +193,23 @@ class MainActivity : Activity() {
             )
         )
 
-        // BOTTOM NAVIGATION
+        // BOTTOM NAVIGATION CONTAINER
+        val navContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.WHITE)
+            setPadding(0, dp(5), 0, dp(4))
+        }
+
         val bottomScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
-            setBackgroundColor(Color.WHITE)
             overScrollMode = View.OVER_SCROLL_NEVER
+            fillViewport = false
         }
 
         val bottomMenu = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(5, 8, 5, 8)
+            setPadding(dp(5), dp(3), dp(5), dp(3))
         }
 
         val menuItems = listOf(
@@ -201,18 +222,21 @@ class MainActivity : Activity() {
             Triple("♫", "News", "News")
         )
 
+        val navButtons = mutableMapOf<String, LinearLayout>()
+
         fun showPage(page: String) {
             content.removeAllViews()
 
+            // PAGE LAYOUT
             val pageLayout = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.TOP
-                setPadding(22, 28, 22, 20)
+                setPadding(dp(22), dp(28), dp(22), dp(20))
             }
 
             val pageTitle = TextView(this).apply {
                 text = page
-                textSize = 25f
+                textSize = 26f
                 setTextColor(dark)
                 typeface = Typeface.DEFAULT_BOLD
             }
@@ -229,13 +253,32 @@ class MainActivity : Activity() {
                     else -> ""
                 }
 
-                textSize = 15f
+                textSize = 16f
                 setTextColor(Color.DKGRAY)
-                setPadding(0, 12, 0, 0)
+                setPadding(0, dp(12), 0, 0)
             }
 
             pageLayout.addView(pageTitle)
             pageLayout.addView(description)
+
+            if (page == "Home") {
+                val card = TextView(this).apply {
+                    text = "🌸  Welcome to JKT48 Universe\n\nNikmati dunia JKT48 dalam satu aplikasi."
+                    textSize = 17f
+                    setTextColor(dark)
+                    setPadding(dp(18), dp(22), dp(18), dp(22))
+                    background = makeBackground(Color.WHITE, 18)
+                }
+
+                val params = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = dp(28)
+                }
+
+                pageLayout.addView(card, params)
+            }
 
             content.addView(
                 pageLayout,
@@ -245,35 +288,48 @@ class MainActivity : Activity() {
                 )
             )
 
-            if (page == "Home") {
-                val card = TextView(this).apply {
-                    text = "🌸  Welcome to JKT48 Universe\n\nNikmati dunia JKT48 dalam satu aplikasi."
-                    textSize = 17f
-                    setTextColor(dark)
-                    setPadding(18, 22, 18, 22)
-                    setBackgroundColor(Color.WHITE)
+            // UPDATE ACTIVE NAVIGATION
+            navButtons.forEach { (name, button) ->
+                val active = name == page
+
+                button.setBackground(
+                    makeBackground(
+                        if (active) palePink else Color.TRANSPARENT,
+                        14
+                    )
+                )
+
+                val icon = button.getChildAt(0) as TextView
+                val label = button.getChildAt(1) as TextView
+                val indicator = button.getChildAt(2)
+
+                icon.setTextColor(if (active) pink else dark)
+                label.setTextColor(if (active) pink else Color.DKGRAY)
+                label.typeface = if (active) {
+                    Typeface.DEFAULT_BOLD
+                } else {
+                    Typeface.DEFAULT
                 }
 
-                val params = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = 28
-                }
-
-                pageLayout.addView(card, params)
+                indicator.visibility =
+                    if (active) View.VISIBLE else View.INVISIBLE
             }
         }
 
+        // CREATE NAVIGATION BUTTONS
         menuItems.forEach { item ->
             val (icon, label, page) = item
 
             val menuButton = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setPadding(12, 5, 12, 5)
+                setPadding(dp(5), dp(7), dp(5), dp(5))
                 isClickable = true
                 isFocusable = true
+                background = makeBackground(
+                    Color.TRANSPARENT,
+                    14
+                )
 
                 setOnClickListener {
                     showPage(page)
@@ -287,37 +343,77 @@ class MainActivity : Activity() {
 
             val iconText = TextView(this).apply {
                 text = icon
-                textSize = 23f
-                setTextColor(pink)
+                textSize = 29f
+                setTextColor(dark)
                 gravity = Gravity.CENTER
+                typeface = Typeface.DEFAULT_BOLD
             }
 
             val labelText = TextView(this).apply {
                 text = label
-                textSize = 11f
-                setTextColor(dark)
+                textSize = 12f
+                setTextColor(Color.DKGRAY)
                 gravity = Gravity.CENTER
+                maxLines = 1
             }
 
-            menuButton.addView(iconText)
-            menuButton.addView(labelText)
+            val indicator = View(this).apply {
+                setBackground(makeBackground(pink, 10))
+                visibility = View.INVISIBLE
+            }
+
+            menuButton.addView(
+                iconText,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(36)
+                )
+            )
+
+            menuButton.addView(
+                labelText,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(22)
+                )
+            )
+
+            menuButton.addView(
+                indicator,
+                LinearLayout.LayoutParams(
+                    dp(30),
+                    dp(3)
+                ).apply {
+                    topMargin = dp(4)
+                }
+            )
 
             bottomMenu.addView(
                 menuButton,
                 LinearLayout.LayoutParams(
-                    78,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                    dp(78),
+                    dp(76)
                 )
             )
+
+            navButtons[page] = menuButton
         }
 
         bottomScroll.addView(bottomMenu)
 
-        mainLayout.addView(
+        navContainer.addView(
             bottomScroll,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                65
+                dp(82)
+            )
+        )
+
+        mainLayout.addView(
+            navContainer,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(88)
             )
         )
 
