@@ -56,9 +56,22 @@ class MainActivity : Activity() {
         showIntro()
     }
 
+    // ==========================================
+    // INTRO VIDEO
+    // ==========================================
+
     private fun showIntro() {
         introFinished = false
         root.removeAllViews()
+
+        // FULLSCREEN
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
 
         val layout = FrameLayout(this).apply {
             setBackgroundColor(Color.BLACK)
@@ -72,9 +85,14 @@ class MainActivity : Activity() {
             )
         )
 
+        // VIDEO VIEW
         val videoView = PlayerView(this).apply {
             useController = false
-            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+
+            // Fill screen without black letterbox.
+            // Some edges may be cropped to preserve aspect ratio.
+            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+
             keepScreenOn = true
         }
 
@@ -90,26 +108,66 @@ class MainActivity : Activity() {
         val processPanel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(dp(22), dp(12), dp(22), dp(12))
+            setPadding(
+                dp(22),
+                dp(14),
+                dp(22),
+                dp(14)
+            )
+
             background = makeBackground(
-                Color.argb(175, 25, 15, 30),
-                16
+                Color.argb(190, 25, 15, 30),
+                22
             )
         }
 
-        val processRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
+        // PROCESS TEXT
         val processText = TextView(this).apply {
             text = "Process"
             textSize = 14f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
         }
 
-        // LIQUID GLASS SKIP BUTTON
+        processPanel.addView(
+            processText,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(24)
+            )
+        )
+
+        // PROGRESS BAR
+        val progress = ProgressBar(
+            this,
+            null,
+            android.R.attr.progressBarStyleHorizontal
+        ).apply {
+            max = 1000
+            progress = 0
+
+            progressTintList =
+                android.content.res.ColorStateList.valueOf(pink)
+
+            progressBackgroundTintList =
+                android.content.res.ColorStateList.valueOf(
+                    Color.rgb(110, 75, 95)
+                )
+        }
+
+        processPanel.addView(
+            progress,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(5)
+            ).apply {
+                topMargin = dp(12)
+                bottomMargin = dp(14)
+            }
+        )
+
+        // LIQUID GLASS BACKGROUND
         val skipGlass = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(
@@ -119,19 +177,27 @@ class MainActivity : Activity() {
             )
         ).apply {
             cornerRadius = dp(30).toFloat()
+
             setStroke(
                 dp(1),
                 Color.argb(180, 255, 255, 255)
             )
         }
 
+        // SKIP BUTTON
         val skipButton = TextView(this).apply {
             text = "SKIP  ›"
             textSize = 13f
             setTextColor(Color.WHITE)
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
-            setPadding(dp(18), dp(9), dp(18), dp(9))
+
+            setPadding(
+                dp(24),
+                dp(9),
+                dp(24),
+                dp(9)
+            )
 
             background = skipGlass
             elevation = dp(6).toFloat()
@@ -139,6 +205,7 @@ class MainActivity : Activity() {
             isClickable = true
             isFocusable = true
 
+            // TOUCH ANIMATION
             setOnTouchListener { view, event ->
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
@@ -160,6 +227,7 @@ class MainActivity : Activity() {
                             .start()
                     }
                 }
+
                 false
             }
 
@@ -168,63 +236,33 @@ class MainActivity : Activity() {
             }
         }
 
-        processRow.addView(
-            processText,
-            LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            )
-        )
-
-        processRow.addView(skipButton)
-
         processPanel.addView(
-            processRow,
+            skipButton,
             LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
 
-        // PROGRESS BAR
-        val progress = ProgressBar(
-            this,
-            null,
-            android.R.attr.progressBarStyleHorizontal
-        ).apply {
-            max = 1000
-            progress = 0
-            progressTintList =
-                android.content.res.ColorStateList.valueOf(pink)
-            progressBackgroundTintList =
-                android.content.res.ColorStateList.valueOf(
-                    Color.rgb(110, 75, 95)
-                )
-        }
-
-        processPanel.addView(
-            progress,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(5)
-            ).apply {
-                topMargin = dp(12)
-            }
-        )
-
+        // PANEL AT BOTTOM CENTER
         val panelParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.WRAP_CONTENT,
-            Gravity.BOTTOM
+            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
         ).apply {
-            setMargins(dp(20), 0, dp(20), dp(35))
+            setMargins(
+                dp(20),
+                0,
+                dp(20),
+                dp(35)
+            )
         }
 
         layout.addView(processPanel, panelParams)
 
         // EXOPLAYER
         val exoPlayer = ExoPlayer.Builder(this).build()
+
         player = exoPlayer
         videoView.player = exoPlayer
 
@@ -239,6 +277,7 @@ class MainActivity : Activity() {
         exoPlayer.addListener(object : Player.Listener {
 
             override fun onPlaybackStateChanged(state: Int) {
+
                 if (state == Player.STATE_READY) {
                     startProgressUpdater(progress)
                 }
@@ -265,12 +304,18 @@ class MainActivity : Activity() {
         exoPlayer.playWhenReady = true
     }
 
+    // ==========================================
+    // PROGRESS UPDATER
+    // ==========================================
+
     private fun startProgressUpdater(progress: ProgressBar) {
         stopProgressUpdater()
 
         val runnable = object : Runnable {
+
             override fun run() {
                 val currentPlayer = player ?: return
+
                 val duration = currentPlayer.duration
                 val position = currentPlayer.currentPosition
 
@@ -295,36 +340,60 @@ class MainActivity : Activity() {
         progressRunnable?.let {
             handler.removeCallbacks(it)
         }
+
         progressRunnable = null
     }
+
+    // ==========================================
+    // FINISH INTRO
+    // ==========================================
 
     private fun finishIntro() {
         if (introFinished) return
 
         introFinished = true
+
         stopProgressUpdater()
         releasePlayer()
+
         showHome()
     }
 
     private fun releasePlayer() {
         stopProgressUpdater()
+
         player?.release()
         player = null
     }
+
+    // ==========================================
+    // BACKGROUND DESIGN
+    // ==========================================
 
     private fun makeBackground(
         color: Int,
         radius: Int
     ): GradientDrawable {
+
         return GradientDrawable().apply {
             setColor(color)
             cornerRadius = dp(radius).toFloat()
         }
     }
 
+    // ==========================================
+    // HOME PAGE
+    // ==========================================
+
     private fun showHome() {
+
         root.removeAllViews()
+
+        // RESTORE SYSTEM BARS
+        window.decorView.systemUiVisibility = 0
+        window.statusBarColor = dark
+        window.navigationBarColor = dark
+
         root.setBackgroundColor(light)
 
         val mainLayout = LinearLayout(this).apply {
@@ -343,7 +412,14 @@ class MainActivity : Activity() {
         // HEADER
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(22), dp(22), dp(22), dp(20))
+
+            setPadding(
+                dp(22),
+                dp(22),
+                dp(22),
+                dp(20)
+            )
+
             setBackgroundColor(pink)
         }
 
@@ -362,6 +438,7 @@ class MainActivity : Activity() {
 
         header.addView(title)
         header.addView(subtitle)
+
         mainLayout.addView(header)
 
         // CONTENT
@@ -378,11 +455,17 @@ class MainActivity : Activity() {
             )
         )
 
-        // BOTTOM NAVIGATION
+        // BOTTOM NAVIGATION CONTAINER
         val navContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.WHITE)
-            setPadding(0, dp(5), 0, dp(4))
+
+            setPadding(
+                0,
+                dp(5),
+                0,
+                dp(4)
+            )
         }
 
         val bottomScroll = HorizontalScrollView(this).apply {
@@ -393,7 +476,13 @@ class MainActivity : Activity() {
         val bottomMenu = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(5), dp(3), dp(5), dp(3))
+
+            setPadding(
+                dp(5),
+                dp(3),
+                dp(5),
+                dp(3)
+            )
         }
 
         val menuItems = listOf(
@@ -406,15 +495,24 @@ class MainActivity : Activity() {
             Triple("♫", "News", "News")
         )
 
-        val navButtons = mutableMapOf<String, LinearLayout>()
+        val navButtons =
+            mutableMapOf<String, LinearLayout>()
 
+        // PAGE NAVIGATION
         fun showPage(page: String) {
+
             content.removeAllViews()
 
             val pageLayout = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.TOP
-                setPadding(dp(22), dp(28), dp(22), dp(20))
+
+                setPadding(
+                    dp(22),
+                    dp(28),
+                    dp(22),
+                    dp(20)
+                )
             }
 
             val pageTitle = TextView(this).apply {
@@ -425,32 +523,68 @@ class MainActivity : Activity() {
             }
 
             val description = TextView(this).apply {
+
                 text = when (page) {
-                    "Home" -> "Selamat datang di JKT48 Universe! ✨"
-                    "Members" -> "Jelajahi halaman member JKT48."
-                    "Events" -> "Informasi event dan jadwal."
-                    "Chat" -> "Ruang chat virtual JKT48 Universe."
-                    "Quiz" -> "Uji pengetahuanmu tentang JKT48!"
-                    "Gallery" -> "Koleksi foto dan momen."
-                    "News" -> "Berita dan informasi terbaru."
+                    "Home" ->
+                        "Selamat datang di JKT48 Universe! ✨"
+
+                    "Members" ->
+                        "Jelajahi halaman member JKT48."
+
+                    "Events" ->
+                        "Informasi event dan jadwal."
+
+                    "Chat" ->
+                        "Ruang chat virtual JKT48 Universe."
+
+                    "Quiz" ->
+                        "Uji pengetahuanmu tentang JKT48!"
+
+                    "Gallery" ->
+                        "Koleksi foto dan momen."
+
+                    "News" ->
+                        "Berita dan informasi terbaru."
+
                     else -> ""
                 }
 
                 textSize = 16f
                 setTextColor(Color.DKGRAY)
-                setPadding(0, dp(12), 0, 0)
+
+                setPadding(
+                    0,
+                    dp(12),
+                    0,
+                    0
+                )
             }
 
             pageLayout.addView(pageTitle)
             pageLayout.addView(description)
 
+            // HOME CARD
             if (page == "Home") {
+
                 val card = TextView(this).apply {
-                    text = "🌸  Welcome to JKT48 Universe\n\nNikmati dunia JKT48 dalam satu aplikasi."
+                    text =
+                        "🌸  Welcome to JKT48 Universe\n\n" +
+                        "Nikmati dunia JKT48 dalam satu aplikasi."
+
                     textSize = 17f
                     setTextColor(dark)
-                    setPadding(dp(18), dp(22), dp(18), dp(22))
-                    background = makeBackground(Color.WHITE, 18)
+
+                    setPadding(
+                        dp(18),
+                        dp(22),
+                        dp(18),
+                        dp(22)
+                    )
+
+                    background = makeBackground(
+                        Color.WHITE,
+                        18
+                    )
                 }
 
                 val params = LinearLayout.LayoutParams(
@@ -473,6 +607,7 @@ class MainActivity : Activity() {
 
             // ACTIVE NAVIGATION STYLE
             navButtons.forEach { (name, button) ->
+
                 val active = name == page
 
                 button.background = makeBackground(
@@ -480,12 +615,22 @@ class MainActivity : Activity() {
                     14
                 )
 
-                val icon = button.getChildAt(0) as TextView
-                val label = button.getChildAt(1) as TextView
-                val indicator = button.getChildAt(2)
+                val icon =
+                    button.getChildAt(0) as TextView
 
-                icon.setTextColor(if (active) pink else dark)
-                label.setTextColor(if (active) pink else Color.DKGRAY)
+                val label =
+                    button.getChildAt(1) as TextView
+
+                val indicator =
+                    button.getChildAt(2)
+
+                icon.setTextColor(
+                    if (active) pink else dark
+                )
+
+                label.setTextColor(
+                    if (active) pink else Color.DKGRAY
+                )
 
                 label.typeface = if (active) {
                     Typeface.DEFAULT_BOLD
@@ -494,23 +639,40 @@ class MainActivity : Activity() {
                 }
 
                 indicator.visibility =
-                    if (active) View.VISIBLE else View.INVISIBLE
+                    if (active) {
+                        View.VISIBLE
+                    } else {
+                        View.INVISIBLE
+                    }
             }
         }
 
         // CREATE MENU BUTTONS
         menuItems.forEach { item ->
+
             val (icon, label, page) = item
 
             val menuButton = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setPadding(dp(5), dp(7), dp(5), dp(5))
+
+                setPadding(
+                    dp(5),
+                    dp(7),
+                    dp(5),
+                    dp(5)
+                )
+
                 isClickable = true
                 isFocusable = true
-                background = makeBackground(Color.TRANSPARENT, 14)
+
+                background = makeBackground(
+                    Color.TRANSPARENT,
+                    14
+                )
 
                 setOnClickListener {
+
                     showPage(page)
 
                     Toast.makeText(
@@ -599,6 +761,10 @@ class MainActivity : Activity() {
 
         showPage("Home")
     }
+
+    // ==========================================
+    // ACTIVITY LIFECYCLE
+    // ==========================================
 
     override fun onStop() {
         super.onStop()
