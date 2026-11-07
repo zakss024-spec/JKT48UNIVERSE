@@ -1,3 +1,4 @@
+
 package com.zakss.jkt48universe
 
 import android.app.Activity
@@ -8,9 +9,13 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.DecelerateInterpolator
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -99,8 +104,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
             setPadding(dp(22), dp(12), dp(22), dp(12))
             background = makeBackground(
-                Color.argb(190, 25, 15, 30),
-                22
+                Color.argb(190, 25, 15, 30), 22
             )
         }
 
@@ -180,14 +184,7 @@ class MainActivity : Activity() {
         )
 
         processRow.addView(skipButton)
-
-        processPanel.addView(
-            processRow,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
+        processPanel.addView(processRow)
 
         val progress = ProgressBar(
             this,
@@ -196,10 +193,8 @@ class MainActivity : Activity() {
         ).apply {
             max = 1000
             this.progress = 0
-
             progressTintList =
                 android.content.res.ColorStateList.valueOf(pink)
-
             progressBackgroundTintList =
                 android.content.res.ColorStateList.valueOf(
                     Color.rgb(110, 75, 95)
@@ -227,7 +222,6 @@ class MainActivity : Activity() {
         layout.addView(processPanel, panelParams)
 
         val exoPlayer = ExoPlayer.Builder(this).build()
-
         player = exoPlayer
         videoView.player = exoPlayer
 
@@ -268,17 +262,12 @@ class MainActivity : Activity() {
         exoPlayer.playWhenReady = true
     }
 
-    // ==========================================
-    // PROGRESS UPDATER
-    // ==========================================
-
     private fun startProgressUpdater(progress: ProgressBar) {
         stopProgressUpdater()
 
         val runnable = object : Runnable {
             override fun run() {
                 val currentPlayer = player ?: return
-
                 val duration = currentPlayer.duration
                 val position = currentPlayer.currentPosition
 
@@ -306,15 +295,10 @@ class MainActivity : Activity() {
         progressRunnable = null
     }
 
-    // ==========================================
-    // FINISH INTRO
-    // ==========================================
-
     private fun finishIntro() {
         if (introFinished) return
 
         introFinished = true
-
         stopProgressUpdater()
         releasePlayer()
         showHome()
@@ -327,7 +311,7 @@ class MainActivity : Activity() {
     }
 
     // ==========================================
-    // BACKGROUND DESIGN
+    // DESIGN HELPERS
     // ==========================================
 
     private fun makeBackground(
@@ -337,6 +321,31 @@ class MainActivity : Activity() {
         return GradientDrawable().apply {
             setColor(color)
             cornerRadius = dp(radius).toFloat()
+        }
+    }
+
+    private fun animateIn(view: View) {
+        view.alpha = 0f
+        view.translationY = dp(12).toFloat()
+        view.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(230)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+    }
+
+    private fun makeText(
+        text: String,
+        size: Float,
+        color: Int,
+        bold: Boolean = false
+    ): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = size
+            setTextColor(color)
+            if (bold) typeface = Typeface.DEFAULT_BOLD
         }
     }
 
@@ -350,7 +359,6 @@ class MainActivity : Activity() {
         window.decorView.systemUiVisibility = 0
         window.statusBarColor = dark
         window.navigationBarColor = dark
-
         root.setBackgroundColor(light)
 
         val mainLayout = LinearLayout(this).apply {
@@ -366,31 +374,22 @@ class MainActivity : Activity() {
             )
         )
 
-        // HEADER
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(22), dp(20), dp(22), dp(18))
             setBackgroundColor(pink)
         }
 
-        val title = TextView(this).apply {
-            text = "JKT48 Universe 🌸"
-            textSize = 25f
-            setTextColor(Color.WHITE)
-            typeface = Typeface.DEFAULT_BOLD
-        }
+        header.addView(
+            makeText("JKT48 Universe 🌸", 25f, Color.WHITE, true)
+        )
 
-        val subtitle = TextView(this).apply {
-            text = "Your world of idols ✨"
-            textSize = 14f
-            setTextColor(Color.WHITE)
-        }
+        header.addView(
+            makeText("Your world of idols ✨", 14f, Color.WHITE)
+        )
 
-        header.addView(title)
-        header.addView(subtitle)
         mainLayout.addView(header)
 
-        // CONTENT
         val content = FrameLayout(this)
 
         mainLayout.addView(
@@ -402,7 +401,6 @@ class MainActivity : Activity() {
             )
         )
 
-        // BOTTOM NAVIGATION
         val navContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.WHITE)
@@ -432,17 +430,8 @@ class MainActivity : Activity() {
 
         val navButtons = mutableMapOf<String, LinearLayout>()
 
-        // SECTION TITLE
-        fun addSectionTitle(
-            parent: LinearLayout,
-            text: String
-        ) {
-            val label = TextView(this).apply {
-                this.text = text
-                textSize = 19f
-                setTextColor(dark)
-                typeface = Typeface.DEFAULT_BOLD
-            }
+        fun addSectionTitle(parent: LinearLayout, text: String) {
+            val label = makeText(text, 19f, dark, true)
 
             parent.addView(
                 label,
@@ -456,7 +445,6 @@ class MainActivity : Activity() {
             )
         }
 
-        // INFORMATION CARD
         fun addInfoCard(
             parent: LinearLayout,
             heading: String,
@@ -469,27 +457,11 @@ class MainActivity : Activity() {
                 background = makeBackground(Color.WHITE, 18)
             }
 
-            val icon = TextView(this).apply {
-                text = symbol
-                textSize = 25f
-            }
+            card.addView(makeText(symbol, 25f, pink))
+            card.addView(makeText(heading, 16f, dark, true))
 
-            val titleText = TextView(this).apply {
-                text = heading
-                textSize = 16f
-                setTextColor(dark)
-                typeface = Typeface.DEFAULT_BOLD
-            }
-
-            val detail = TextView(this).apply {
-                text = description
-                textSize = 13f
-                setTextColor(Color.DKGRAY)
-                setPadding(0, dp(5), 0, 0)
-            }
-
-            card.addView(icon)
-            card.addView(titleText)
+            val detail = makeText(description, 13f, Color.DKGRAY)
+            detail.setPadding(0, dp(5), 0, 0)
             card.addView(detail)
 
             parent.addView(
@@ -503,7 +475,6 @@ class MainActivity : Activity() {
             )
         }
 
-        // PAGE NAVIGATION
         fun showPage(page: String) {
             content.removeAllViews()
 
@@ -517,22 +488,15 @@ class MainActivity : Activity() {
                 setPadding(dp(20), dp(22), dp(20), dp(25))
             }
 
-            val pageTitle = TextView(this).apply {
-                text = page
-                textSize = 25f
-                setTextColor(dark)
-                typeface = Typeface.DEFAULT_BOLD
-            }
-
-            pageLayout.addView(pageTitle)
+            pageLayout.addView(
+                makeText(page, 25f, dark, true)
+            )
 
             if (page == "Home") {
 
-                // WELCOME BANNER
                 val banner = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     setPadding(dp(20), dp(22), dp(20), dp(22))
-
                     background = GradientDrawable(
                         GradientDrawable.Orientation.LEFT_RIGHT,
                         intArrayOf(
@@ -544,21 +508,21 @@ class MainActivity : Activity() {
                     }
                 }
 
-                val bannerTitle = TextView(this).apply {
-                    text = "Welcome to JKT48 Universe!"
-                    textSize = 20f
-                    setTextColor(Color.WHITE)
-                    typeface = Typeface.DEFAULT_BOLD
-                }
+                banner.addView(
+                    makeText(
+                        "Welcome to JKT48 Universe!",
+                        20f,
+                        Color.WHITE,
+                        true
+                    )
+                )
 
-                val bannerDescription = TextView(this).apply {
-                    text = "Satu tempat untuk menjelajahi dunia JKT48."
-                    textSize = 14f
-                    setTextColor(Color.WHITE)
-                    setPadding(0, dp(8), 0, 0)
-                }
-
-                banner.addView(bannerTitle)
+                val bannerDescription = makeText(
+                    "Satu tempat untuk menjelajahi dunia JKT48.",
+                    14f,
+                    Color.WHITE
+                )
+                bannerDescription.setPadding(0, dp(8), 0, 0)
                 banner.addView(bannerDescription)
 
                 pageLayout.addView(
@@ -571,7 +535,6 @@ class MainActivity : Activity() {
                     }
                 )
 
-                // MEMBER SPOTLIGHT
                 addSectionTitle(pageLayout, "♡ Member Spotlight")
 
                 addInfoCard(
@@ -581,7 +544,6 @@ class MainActivity : Activity() {
                     "🌸"
                 )
 
-                // QUICK MENU
                 addSectionTitle(pageLayout, "✦ Jelajahi Menu")
 
                 val quickMenu = LinearLayout(this).apply {
@@ -611,23 +573,17 @@ class MainActivity : Activity() {
                         }
                     }
 
-                    val quickIcon = TextView(this).apply {
-                        text = icon
-                        textSize = 25f
-                        gravity = Gravity.CENTER
-                        setTextColor(pink)
-                    }
+                    quickCard.addView(
+                        makeText(icon, 25f, pink).apply {
+                            gravity = Gravity.CENTER
+                        }
+                    )
 
-                    val quickLabel = TextView(this).apply {
-                        text = label
-                        textSize = 12f
-                        gravity = Gravity.CENTER
-                        setTextColor(dark)
-                        typeface = Typeface.DEFAULT_BOLD
-                    }
-
-                    quickCard.addView(quickIcon)
-                    quickCard.addView(quickLabel)
+                    quickCard.addView(
+                        makeText(label, 12f, dark, true).apply {
+                            gravity = Gravity.CENTER
+                        }
+                    )
 
                     quickMenu.addView(
                         quickCard,
@@ -642,15 +598,8 @@ class MainActivity : Activity() {
                     )
                 }
 
-                pageLayout.addView(
-                    quickMenu,
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                )
+                pageLayout.addView(quickMenu)
 
-                // EVENTS
                 addSectionTitle(pageLayout, "★ Events")
 
                 addInfoCard(
@@ -660,7 +609,6 @@ class MainActivity : Activity() {
                     "🎤"
                 )
 
-                // LATEST UPDATE
                 addSectionTitle(pageLayout, "♫ Update Terbaru")
 
                 addInfoCard(
@@ -670,37 +618,23 @@ class MainActivity : Activity() {
                     "📰"
                 )
 
+            } else if (page == "Members") {
+
+                showMembersDirectory(pageLayout)
+
             } else {
 
                 val description = when (page) {
-                    "Members" ->
-                        "Jelajahi profil dan informasi member JKT48."
-
-                    "Events" ->
-                        "Temukan informasi event dan jadwal."
-
-                    "Chat" ->
-                        "Ruang interaksi komunitas JKT48 Universe."
-
-                    "Quiz" ->
-                        "Uji pengetahuanmu tentang JKT48!"
-
-                    "Gallery" ->
-                        "Koleksi foto dan berbagai momen."
-
-                    "News" ->
-                        "Informasi dan berita terbaru."
-
+                    "Events" -> "Temukan informasi event dan jadwal."
+                    "Chat" -> "Ruang interaksi komunitas JKT48 Universe."
+                    "Quiz" -> "Uji pengetahuanmu tentang JKT48!"
+                    "Gallery" -> "Koleksi foto dan berbagai momen."
+                    "News" -> "Informasi dan berita terbaru."
                     else -> ""
                 }
 
-                val info = TextView(this).apply {
-                    text = description
-                    textSize = 15f
-                    setTextColor(Color.DKGRAY)
-                    setPadding(0, dp(12), 0, dp(18))
-                }
-
+                val info = makeText(description, 15f, Color.DKGRAY)
+                info.setPadding(0, dp(12), 0, dp(18))
                 pageLayout.addView(info)
 
                 addInfoCard(
@@ -721,7 +655,6 @@ class MainActivity : Activity() {
                 )
             )
 
-            // ACTIVE NAVIGATION STYLE
             navButtons.forEach { (name, button) ->
                 val active = name == page
 
@@ -735,10 +668,7 @@ class MainActivity : Activity() {
                 val indicator = button.getChildAt(2)
 
                 icon.setTextColor(if (active) pink else dark)
-
-                label.setTextColor(
-                    if (active) pink else Color.DKGRAY
-                )
+                label.setTextColor(if (active) pink else Color.DKGRAY)
 
                 label.typeface = if (active) {
                     Typeface.DEFAULT_BOLD
@@ -751,7 +681,6 @@ class MainActivity : Activity() {
             }
         }
 
-        // CREATE MENU BUTTONS
         menuItems.forEach { item ->
             val (icon, label, page) = item
 
@@ -768,18 +697,11 @@ class MainActivity : Activity() {
                 }
             }
 
-            val iconText = TextView(this).apply {
-                text = icon
-                textSize = 29f
-                setTextColor(dark)
+            val iconText = makeText(icon, 29f, dark, true).apply {
                 gravity = Gravity.CENTER
-                typeface = Typeface.DEFAULT_BOLD
             }
 
-            val labelText = TextView(this).apply {
-                text = label
-                textSize = 12f
-                setTextColor(Color.DKGRAY)
+            val labelText = makeText(label, 12f, Color.DKGRAY).apply {
                 gravity = Gravity.CENTER
                 maxLines = 1
             }
@@ -807,20 +729,14 @@ class MainActivity : Activity() {
 
             menuButton.addView(
                 indicator,
-                LinearLayout.LayoutParams(
-                    dp(30),
-                    dp(3)
-                ).apply {
+                LinearLayout.LayoutParams(dp(30), dp(3)).apply {
                     topMargin = dp(4)
                 }
             )
 
             bottomMenu.addView(
                 menuButton,
-                LinearLayout.LayoutParams(
-                    dp(78),
-                    dp(76)
-                )
+                LinearLayout.LayoutParams(dp(78), dp(76))
             )
 
             navButtons[page] = menuButton
@@ -848,6 +764,315 @@ class MainActivity : Activity() {
     }
 
     // ==========================================
+    // MEMBERS DIRECTORY - STAGE 1
+    // ==========================================
+
+    private fun showMembersDirectory(parent: LinearLayout) {
+
+        var selectedCategory = "Aktif"
+        var selectedGeneration = 0
+        var searchQuery = ""
+
+        val categories = listOf("Aktif", "Trainee", "Alumni")
+
+        val intro = makeText(
+            "Jelajahi member JKT48 berdasarkan status dan generasi.",
+            14f,
+            Color.DKGRAY
+        )
+
+        intro.setPadding(0, dp(10), 0, dp(16))
+        parent.addView(intro)
+
+        // SEARCH FIELD
+
+        val searchBox = EditText(this).apply {
+            hint = "Cari nama member..."
+            textSize = 14f
+            singleLine = true
+            setTextColor(dark)
+            setHintTextColor(Color.GRAY)
+            setPadding(dp(15), dp(13), dp(15), dp(13))
+            background = makeBackground(Color.WHITE, 15)
+        }
+
+        parent.addView(
+            searchBox,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(50)
+            ).apply {
+                bottomMargin = dp(18)
+            }
+        )
+
+        // CATEGORY FILTERS
+
+        parent.addView(
+            makeText("Kategori Member", 17f, dark, true)
+        )
+
+        val categoryRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        parent.addView(
+            categoryRow,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(54)
+            ).apply {
+                topMargin = dp(8)
+            }
+        )
+
+        // GENERATION FILTERS
+
+        parent.addView(
+            makeText("Filter Generasi", 17f, dark, true).apply {
+                setPadding(0, dp(12), 0, dp(8))
+            }
+        )
+
+        val generationScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+
+        val generationRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        generationScroll.addView(generationRow)
+
+        parent.addView(
+            generationScroll,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(44)
+            )
+        )
+
+        // RESULT AREA
+
+        val resultArea = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        parent.addView(
+            resultArea,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(18)
+            }
+        )
+
+        fun makeFilterButton(
+            label: String,
+            active: Boolean
+        ): TextView {
+            return TextView(this).apply {
+                text = label
+                textSize = 13f
+                gravity = Gravity.CENTER
+                typeface = if (active) {
+                    Typeface.DEFAULT_BOLD
+                } else {
+                    Typeface.DEFAULT
+                }
+                setTextColor(if (active) pink else dark)
+                setPadding(dp(15), dp(9), dp(15), dp(9))
+                background = makeBackground(
+                    if (active) palePink else Color.WHITE,
+                    30
+                )
+                isClickable = true
+                isFocusable = true
+            }
+        }
+
+        fun refreshResults() {
+            resultArea.animate().cancel()
+            resultArea.removeAllViews()
+
+            val categoryDescription = when (selectedCategory) {
+                "Aktif" -> "Member yang masih aktif."
+                "Trainee" -> "Member yang berstatus trainee."
+                else -> "Member yang telah lulus."
+            }
+
+            val countLabel = makeText(
+                "$selectedCategory • ${if (selectedGeneration == 0) "Semua generasi" else "Generasi $selectedGeneration"}",
+                15f,
+                dark,
+                true
+            )
+
+            resultArea.addView(countLabel)
+
+            val detail = makeText(
+                categoryDescription,
+                12f,
+                Color.DKGRAY
+            )
+            detail.setPadding(0, dp(5), 0, dp(12))
+            resultArea.addView(detail)
+
+            val emptyCard = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(20), dp(25), dp(20), dp(25))
+                background = makeBackground(Color.WHITE, 18)
+            }
+
+            emptyCard.addView(
+                makeText("🌸", 38f, pink).apply {
+                    gravity = Gravity.CENTER
+                }
+            )
+
+            emptyCard.addView(
+                makeText(
+                    "Data Member Sedang Disiapkan",
+                    16f,
+                    dark,
+                    true
+                ).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(10), 0, dp(5))
+                }
+            )
+
+            val emptyDescription = when {
+                searchQuery.isNotBlank() ->
+                    "Pencarian \"$searchQuery\" belum menemukan data. Data member resmi akan ditambahkan pada tahap berikutnya."
+
+                selectedGeneration != 0 ->
+                    "Data member Generasi $selectedGeneration belum dimasukkan."
+
+                else ->
+                    "Daftar member dan foto resmi akan ditambahkan setelah data diverifikasi."
+            }
+
+            emptyCard.addView(
+                makeText(
+                    emptyDescription,
+                    13f,
+                    Color.DKGRAY
+                ).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(5), 0, 0)
+                }
+            )
+
+            resultArea.addView(
+                emptyCard,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            )
+
+            animateIn(resultArea)
+        }
+
+        fun refreshGenerationButtons() {
+            generationRow.removeAllViews()
+
+            val generations = mutableListOf(0)
+            generations.addAll((1..14).toList())
+
+            generations.forEach { generation ->
+                val label = if (generation == 0) {
+                    "Semua"
+                } else {
+                    "Gen $generation"
+                }
+
+                val button = makeFilterButton(
+                    label,
+                    selectedGeneration == generation
+                )
+
+                button.setOnClickListener {
+                    selectedGeneration = generation
+                    refreshGenerationButtons()
+                    refreshResults()
+                }
+
+                generationRow.addView(
+                    button,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        dp(36)
+                    ).apply {
+                        marginEnd = dp(7)
+                    }
+                )
+            }
+        }
+
+        fun refreshCategoryButtons() {
+            categoryRow.removeAllViews()
+
+            categories.forEach { category ->
+                val button = makeFilterButton(
+                    category,
+                    selectedCategory == category
+                )
+
+                button.setOnClickListener {
+                    selectedCategory = category
+                    selectedGeneration = 0
+
+                    refreshCategoryButtons()
+                    refreshGenerationButtons()
+                    refreshResults()
+                }
+
+                categoryRow.addView(
+                    button,
+                    LinearLayout.LayoutParams(
+                        0,
+                        dp(42),
+                        1f
+                    ).apply {
+                        marginEnd = dp(5)
+                    }
+                )
+            }
+        }
+
+        searchBox.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) = Unit
+
+            override fun onTextChanged(
+                s: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int
+            ) {
+                searchQuery = s?.toString()?.trim().orEmpty()
+                refreshResults()
+            }
+
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+
+        refreshCategoryButtons()
+        refreshGenerationButtons()
+        refreshResults()
+    }
+
+    // ==========================================
     // ACTIVITY LIFECYCLE
     // ==========================================
 
@@ -861,4 +1086,3 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 }
-
