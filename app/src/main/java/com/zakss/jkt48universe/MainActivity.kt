@@ -1,4 +1,3 @@
-
 package com.zakss.jkt48universe
 
 import android.app.Activity
@@ -349,8 +348,56 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun addSectionTitle(
+        parent: LinearLayout,
+        text: String
+    ) {
+        val label = makeText(text, 19f, dark, true)
+
+        parent.addView(
+            label,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(22)
+                bottomMargin = dp(10)
+            }
+        )
+    }
+
+    private fun addInfoCard(
+        parent: LinearLayout,
+        heading: String,
+        description: String,
+        symbol: String
+    ) {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(17), dp(16), dp(17), dp(16))
+            background = makeBackground(Color.WHITE, 18)
+        }
+
+        card.addView(makeText(symbol, 25f, pink))
+        card.addView(makeText(heading, 16f, dark, true))
+
+        val detail = makeText(description, 13f, Color.DKGRAY)
+        detail.setPadding(0, dp(5), 0, 0)
+        card.addView(detail)
+
+        parent.addView(
+            card,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(10)
+            }
+        )
+    }
+
     // ==========================================
-    // HOME PAGE
+    // HOME AND NAVIGATION
     // ==========================================
 
     private fun showHome() {
@@ -430,51 +477,6 @@ class MainActivity : Activity() {
 
         val navButtons = mutableMapOf<String, LinearLayout>()
 
-        fun addSectionTitle(parent: LinearLayout, text: String) {
-            val label = makeText(text, 19f, dark, true)
-
-            parent.addView(
-                label,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(22)
-                    bottomMargin = dp(10)
-                }
-            )
-        }
-
-        fun addInfoCard(
-            parent: LinearLayout,
-            heading: String,
-            description: String,
-            symbol: String
-        ) {
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(17), dp(16), dp(17), dp(16))
-                background = makeBackground(Color.WHITE, 18)
-            }
-
-            card.addView(makeText(symbol, 25f, pink))
-            card.addView(makeText(heading, 16f, dark, true))
-
-            val detail = makeText(description, 13f, Color.DKGRAY)
-            detail.setPadding(0, dp(5), 0, 0)
-            card.addView(detail)
-
-            parent.addView(
-                card,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    bottomMargin = dp(10)
-                }
-            )
-        }
-
         fun showPage(page: String) {
             content.removeAllViews()
 
@@ -488,161 +490,16 @@ class MainActivity : Activity() {
                 setPadding(dp(20), dp(22), dp(20), dp(25))
             }
 
-            pageLayout.addView(
-                makeText(page, 25f, dark, true)
-            )
+            pageLayout.addView(makeText(page, 25f, dark, true))
 
-            if (page == "Home") {
-
-                val banner = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(dp(20), dp(22), dp(20), dp(22))
-                    background = GradientDrawable(
-                        GradientDrawable.Orientation.LEFT_RIGHT,
-                        intArrayOf(
-                            Color.rgb(238, 91, 158),
-                            Color.rgb(177, 105, 190)
-                        )
-                    ).apply {
-                        cornerRadius = dp(22).toFloat()
-                    }
-                }
-
-                banner.addView(
-                    makeText(
-                        "Welcome to JKT48 Universe!",
-                        20f,
-                        Color.WHITE,
-                        true
-                    )
-                )
-
-                val bannerDescription = makeText(
-                    "Satu tempat untuk menjelajahi dunia JKT48.",
-                    14f,
-                    Color.WHITE
-                )
-                bannerDescription.setPadding(0, dp(8), 0, 0)
-                banner.addView(bannerDescription)
-
-                pageLayout.addView(
-                    banner,
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        topMargin = dp(18)
-                    }
-                )
-
-                addSectionTitle(pageLayout, "♡ Member Spotlight")
-
-                addInfoCard(
-                    pageLayout,
-                    "Member pilihan",
-                    "Bagian profil member akan segera hadir.",
-                    "🌸"
-                )
-
-                addSectionTitle(pageLayout, "✦ Jelajahi Menu")
-
-                val quickMenu = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER
-                }
-
-                val quickItems = listOf(
-                    Triple("♡", "Members", "Members"),
-                    Triple("★", "Events", "Events"),
-                    Triple("✦", "Quiz", "Quiz")
-                )
-
-                quickItems.forEach { item ->
-                    val (icon, label, destination) = item
-
-                    val quickCard = LinearLayout(this).apply {
-                        orientation = LinearLayout.VERTICAL
-                        gravity = Gravity.CENTER
-                        setPadding(dp(8), dp(15), dp(8), dp(15))
-                        background = makeBackground(Color.WHITE, 16)
-                        isClickable = true
-                        isFocusable = true
-
-                        setOnClickListener {
-                            showPage(destination)
-                        }
-                    }
-
-                    quickCard.addView(
-                        makeText(icon, 25f, pink).apply {
-                            gravity = Gravity.CENTER
-                        }
-                    )
-
-                    quickCard.addView(
-                        makeText(label, 12f, dark, true).apply {
-                            gravity = Gravity.CENTER
-                        }
-                    )
-
-                    quickMenu.addView(
-                        quickCard,
-                        LinearLayout.LayoutParams(
-                            0,
-                            dp(85),
-                            1f
-                        ).apply {
-                            marginEnd = dp(6)
-                            marginStart = dp(6)
-                        }
-                    )
-                }
-
-                pageLayout.addView(quickMenu)
-
-                addSectionTitle(pageLayout, "★ Events")
-
-                addInfoCard(
-                    pageLayout,
-                    "Event JKT48",
-                    "Informasi jadwal dan event akan ditampilkan di sini.",
-                    "🎤"
-                )
-
-                addSectionTitle(pageLayout, "♫ Update Terbaru")
-
-                addInfoCard(
-                    pageLayout,
-                    "Universe Update",
-                    "Bagian berita terbaru sedang disiapkan.",
-                    "📰"
-                )
-
-            } else if (page == "Members") {
-
-                showMembersDirectory(pageLayout)
-
-            } else {
-
-                val description = when (page) {
-                    "Events" -> "Temukan informasi event dan jadwal."
-                    "Chat" -> "Ruang interaksi komunitas JKT48 Universe."
-                    "Quiz" -> "Uji pengetahuanmu tentang JKT48!"
-                    "Gallery" -> "Koleksi foto dan berbagai momen."
-                    "News" -> "Informasi dan berita terbaru."
-                    else -> ""
-                }
-
-                val info = makeText(description, 15f, Color.DKGRAY)
-                info.setPadding(0, dp(12), 0, dp(18))
-                pageLayout.addView(info)
-
-                addInfoCard(
-                    pageLayout,
-                    "Segera hadir",
-                    "Fitur halaman $page sedang dalam tahap pengembangan.",
-                    "🌸"
-                )
+            when (page) {
+                "Home" -> showHomeContent(pageLayout)
+                "Members" -> showMembersDirectory(pageLayout)
+                "Events" -> showEvents(pageLayout)
+                "Chat" -> showChat(pageLayout)
+                "Quiz" -> showQuiz(pageLayout)
+                "Gallery" -> showGallery(pageLayout)
+                "News" -> showNews(pageLayout)
             }
 
             scroll.addView(pageLayout)
@@ -697,22 +554,10 @@ class MainActivity : Activity() {
                 }
             }
 
-            val iconText = makeText(icon, 29f, dark, true).apply {
-                gravity = Gravity.CENTER
-            }
-
-            val labelText = makeText(label, 12f, Color.DKGRAY).apply {
-                gravity = Gravity.CENTER
-                maxLines = 1
-            }
-
-            val indicator = View(this).apply {
-                background = makeBackground(pink, 10)
-                visibility = View.INVISIBLE
-            }
-
             menuButton.addView(
-                iconText,
+                makeText(icon, 29f, dark, true).apply {
+                    gravity = Gravity.CENTER
+                },
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     dp(36)
@@ -720,12 +565,20 @@ class MainActivity : Activity() {
             )
 
             menuButton.addView(
-                labelText,
+                makeText(label, 12f, Color.DKGRAY).apply {
+                    gravity = Gravity.CENTER
+                    maxLines = 1
+                },
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     dp(22)
                 )
             )
+
+            val indicator = View(this).apply {
+                background = makeBackground(pink, 10)
+                visibility = View.INVISIBLE
+            }
 
             menuButton.addView(
                 indicator,
@@ -764,32 +617,159 @@ class MainActivity : Activity() {
     }
 
     // ==========================================
-    // MEMBERS DIRECTORY - STAGE 1
+    // HOME CONTENT
+    // ==========================================
+
+    private fun showHomeContent(parent: LinearLayout) {
+        val banner = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(22), dp(20), dp(22))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(
+                    Color.rgb(238, 91, 158),
+                    Color.rgb(177, 105, 190)
+                )
+            ).apply {
+                cornerRadius = dp(22).toFloat()
+            }
+        }
+
+        banner.addView(
+            makeText(
+                "Welcome to JKT48 Universe!",
+                20f,
+                Color.WHITE,
+                true
+            )
+        )
+
+        banner.addView(
+            makeText(
+                "Satu tempat untuk menjelajahi dunia JKT48.",
+                14f,
+                Color.WHITE
+            ).apply {
+                setPadding(0, dp(8), 0, 0)
+            }
+        )
+
+        parent.addView(
+            banner,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(18)
+            }
+        )
+
+        addSectionTitle(parent, "♡ Member Spotlight")
+        addInfoCard(
+            parent,
+            "Member pilihan",
+            "Profil member akan ditambahkan setelah data resmi diverifikasi.",
+            "🌸"
+        )
+
+        addSectionTitle(parent, "✦ Jelajahi Menu")
+
+        val quickMenu = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        listOf(
+            Triple("♡", "Members", "Members"),
+            Triple("★", "Events", "Events"),
+            Triple("✦", "Quiz", "Quiz")
+        ).forEach { item ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(8), dp(15), dp(8), dp(15))
+                background = makeBackground(Color.WHITE, 16)
+                isClickable = true
+                isFocusable = true
+
+                setOnClickListener {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Gunakan menu navigasi bawah untuk membuka ${item.third}.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            card.addView(
+                makeText(item.first, 25f, pink).apply {
+                    gravity = Gravity.CENTER
+                }
+            )
+
+            card.addView(
+                makeText(item.second, 12f, dark, true).apply {
+                    gravity = Gravity.CENTER
+                }
+            )
+
+            quickMenu.addView(
+                card,
+                LinearLayout.LayoutParams(
+                    0,
+                    dp(85),
+                    1f
+                ).apply {
+                    marginStart = dp(5)
+                    marginEnd = dp(5)
+                }
+            )
+        }
+
+        parent.addView(quickMenu)
+
+        addSectionTitle(parent, "★ Events")
+        addInfoCard(
+            parent,
+            "Event JKT48",
+            "Lihat halaman Events untuk daftar jadwal dan kegiatan.",
+            "🎤"
+        )
+
+        addSectionTitle(parent, "♫ Update Terbaru")
+        addInfoCard(
+            parent,
+            "Universe Update",
+            "Lihat halaman News untuk ringkasan informasi.",
+            "📰"
+        )
+    }
+
+    // ==========================================
+    // MEMBERS DIRECTORY
     // ==========================================
 
     private fun showMembersDirectory(parent: LinearLayout) {
-
         var selectedCategory = "Aktif"
         var selectedGeneration = 0
         var searchQuery = ""
 
         val categories = listOf("Aktif", "Trainee", "Alumni")
 
-        val intro = makeText(
-            "Jelajahi member JKT48 berdasarkan status dan generasi.",
-            14f,
-            Color.DKGRAY
+        parent.addView(
+            makeText(
+                "Jelajahi member JKT48 berdasarkan status dan generasi.",
+                14f,
+                Color.DKGRAY
+            ).apply {
+                setPadding(0, dp(10), 0, dp(16))
+            }
         )
-
-        intro.setPadding(0, dp(10), 0, dp(16))
-        parent.addView(intro)
-
-        // SEARCH FIELD
 
         val searchBox = EditText(this).apply {
             hint = "Cari nama member..."
             textSize = 14f
-            setSingleLine(true) 
+            setSingleLine(true)
             setTextColor(dark)
             setHintTextColor(Color.GRAY)
             setPadding(dp(15), dp(13), dp(15), dp(13))
@@ -806,11 +786,7 @@ class MainActivity : Activity() {
             }
         )
 
-        // CATEGORY FILTERS
-
-        parent.addView(
-            makeText("Kategori Member", 17f, dark, true)
-        )
+        parent.addView(makeText("Kategori Member", 17f, dark, true))
 
         val categoryRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -826,8 +802,6 @@ class MainActivity : Activity() {
                 topMargin = dp(8)
             }
         )
-
-        // GENERATION FILTERS
 
         parent.addView(
             makeText("Filter Generasi", 17f, dark, true).apply {
@@ -853,8 +827,6 @@ class MainActivity : Activity() {
                 dp(44)
             )
         )
-
-        // RESULT AREA
 
         val resultArea = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -895,7 +867,6 @@ class MainActivity : Activity() {
         }
 
         fun refreshResults() {
-            resultArea.animate().cancel()
             resultArea.removeAllViews()
 
             val categoryDescription = when (selectedCategory) {
@@ -904,22 +875,30 @@ class MainActivity : Activity() {
                 else -> "Member yang telah lulus."
             }
 
-            val countLabel = makeText(
-                "$selectedCategory • ${if (selectedGeneration == 0) "Semua generasi" else "Generasi $selectedGeneration"}",
-                15f,
-                dark,
-                true
+            resultArea.addView(
+                makeText(
+                    "$selectedCategory • ${
+                        if (selectedGeneration == 0) {
+                            "Semua generasi"
+                        } else {
+                            "Generasi $selectedGeneration"
+                        }
+                    }",
+                    15f,
+                    dark,
+                    true
+                )
             )
 
-            resultArea.addView(countLabel)
-
-            val detail = makeText(
-                categoryDescription,
-                12f,
-                Color.DKGRAY
+            resultArea.addView(
+                makeText(
+                    categoryDescription,
+                    12f,
+                    Color.DKGRAY
+                ).apply {
+                    setPadding(0, dp(5), 0, dp(12))
+                }
             )
-            detail.setPadding(0, dp(5), 0, dp(12))
-            resultArea.addView(detail)
 
             val emptyCard = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -946,9 +925,9 @@ class MainActivity : Activity() {
                 }
             )
 
-            val emptyDescription = when {
+            val description = when {
                 searchQuery.isNotBlank() ->
-                    "Pencarian \"$searchQuery\" belum menemukan data. Data member resmi akan ditambahkan pada tahap berikutnya."
+                    "Pencarian \"$searchQuery\" belum menemukan data."
 
                 selectedGeneration != 0 ->
                     "Data member Generasi $selectedGeneration belum dimasukkan."
@@ -959,7 +938,7 @@ class MainActivity : Activity() {
 
             emptyCard.addView(
                 makeText(
-                    emptyDescription,
+                    description,
                     13f,
                     Color.DKGRAY
                 ).apply {
@@ -982,8 +961,7 @@ class MainActivity : Activity() {
         fun refreshGenerationButtons() {
             generationRow.removeAllViews()
 
-            val generations = mutableListOf(0)
-            generations.addAll((1..14).toList())
+            val generations = listOf(0) + (1..14).toList()
 
             generations.forEach { generation ->
                 val label = if (generation == 0) {
@@ -1027,7 +1005,6 @@ class MainActivity : Activity() {
                 button.setOnClickListener {
                     selectedCategory = category
                     selectedGeneration = 0
-
                     refreshCategoryButtons()
                     refreshGenerationButtons()
                     refreshResults()
@@ -1073,6 +1050,452 @@ class MainActivity : Activity() {
     }
 
     // ==========================================
+    // EVENTS
+    // ==========================================
+
+    private fun showEvents(parent: LinearLayout) {
+        parent.addView(
+            makeText(
+                "Temukan jadwal dan kegiatan JKT48.",
+                14f,
+                Color.DKGRAY
+            ).apply {
+                setPadding(0, dp(10), 0, dp(15))
+            }
+        )
+
+        addSectionTitle(parent, "★ Jadwal & Events")
+
+        val events = listOf(
+            Triple("07 NOV 2026", "Kenangan Festival 2026", "Event JKT48"),
+            Triple("08 NOV 2026", "OFC Event Sudden Versus #4", "Team Dream • 14.15 WIB"),
+            Triple("08 NOV 2026", "1st Generation Special Stage", "Homecoming • 16.00 WIB"),
+            Triple("11 NOV 2026", "Pertaruhan Cinta", "Theater • 19.00 WIB"),
+            Triple("13 NOV 2026", "Pajama Drive", "Trainee • 19.00 WIB"),
+            Triple("21 NOV 2026", "ZAP FEST 2026", "Event"),
+            Triple("28 NOV 2026", "Healix The Fest 2026", "Bali")
+        )
+
+        events.forEach { event ->
+            addInfoCard(
+                parent,
+                event.second,
+                "${event.first} • ${event.third}",
+                "🎤"
+            )
+        }
+
+        addInfoCard(
+            parent,
+            "Catatan jadwal",
+            "Jadwal dapat berubah. Periksa situs resmi JKT48 sebelum menghadiri acara.",
+            "ℹ"
+        )
+    }
+
+    // ==========================================
+    // CHAT - LOCAL DEMO
+    // ==========================================
+
+    private fun showChat(parent: LinearLayout) {
+        parent.addView(
+            makeText(
+                "Ruang komunitas JKT48 Universe.",
+                14f,
+                Color.DKGRAY
+            ).apply {
+                setPadding(0, dp(10), 0, dp(15))
+            }
+        )
+
+        addInfoCard(
+            parent,
+            "Community Lounge",
+            "Chat masih berupa demo lokal. Pesan belum dikirim ke pengguna lain.",
+            "♡"
+        )
+
+        val chatArea = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = makeBackground(Color.WHITE, 18)
+        }
+
+        val messages = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        messages.addView(
+            makeText("Universe Bot", 13f, pink, true)
+        )
+
+        messages.addView(
+            makeText(
+                "Halo! Selamat datang di JKT48 Universe Chat.",
+                14f,
+                dark
+            ).apply {
+                setPadding(0, dp(5), 0, dp(12))
+            }
+        )
+
+        chatArea.addView(messages)
+
+        val input = EditText(this).apply {
+            hint = "Tulis pesan..."
+            textSize = 14f
+            setSingleLine(true)
+            setTextColor(dark)
+            setHintTextColor(Color.GRAY)
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = makeBackground(light, 12)
+        }
+
+        chatArea.addView(
+            input,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(48)
+            ).apply {
+                topMargin = dp(10)
+            }
+        )
+
+        val send = TextView(this).apply {
+            text = "Kirim pesan"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            setPadding(dp(15), dp(12), dp(15), dp(12))
+            background = makeBackground(pink, 12)
+
+            setOnClickListener {
+                if (input.text.toString().trim().isEmpty()) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Tulis pesan terlebih dahulu.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Chat online tersedia setelah integrasi database.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    input.text.clear()
+                }
+            }
+        }
+
+        chatArea.addView(
+            send,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(46)
+            ).apply {
+                topMargin = dp(10)
+            }
+        )
+
+        parent.addView(
+            chatArea,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+    }
+
+    // ==========================================
+    // QUIZ
+    // ==========================================
+
+    private fun showQuiz(parent: LinearLayout) {
+        parent.addView(
+            makeText(
+                "Uji pengetahuanmu tentang JKT48!",
+                14f,
+                Color.DKGRAY
+            ).apply {
+                setPadding(0, dp(10), 0, dp(15))
+            }
+        )
+
+        addSectionTitle(parent, "✦ JKT48 Quiz")
+
+        val questions = listOf(
+            Triple(
+                "JKT48 merupakan sister group dari grup apa?",
+                listOf("AKB48", "Nogizaka46", "SKE48"),
+                0
+            ),
+            Triple(
+                "JKT48 berasal dari negara mana?",
+                listOf("Jepang", "Indonesia", "Thailand"),
+                1
+            ),
+            Triple(
+                "Di kota mana JKT48 berbasis?",
+                listOf("Jakarta", "Bandung", "Surabaya"),
+                0
+            ),
+            Triple(
+                "JKT48 termasuk keluarga grup apa?",
+                listOf("46 Group", "48 Group", "Hello! Project"),
+                1
+            ),
+            Triple(
+                "Apa nama tempat pertunjukan reguler JKT48?",
+                listOf("Theater", "Stadion", "Museum"),
+                0
+            )
+        )
+
+        val quizArea = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            background = makeBackground(Color.WHITE, 18)
+        }
+
+        val questionNumber = makeText("", 13f, pink, true)
+        val questionText = makeText("", 18f, dark, true)
+        val answerArea = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val feedback = makeText("", 14f, dark, true)
+        val scoreText = makeText("", 14f, pink, true)
+
+        quizArea.addView(questionNumber)
+
+        quizArea.addView(
+            questionText.apply {
+                setPadding(0, dp(10), 0, dp(15))
+            }
+        )
+
+        quizArea.addView(answerArea)
+
+        quizArea.addView(
+            feedback.apply {
+                setPadding(0, dp(12), 0, dp(5))
+            }
+        )
+
+        quizArea.addView(scoreText)
+        parent.addView(quizArea)
+
+        var currentQuestion = 0
+        var score = 0
+        var answered = false
+        var nextRunnable: Runnable? = null
+
+        fun showQuestion() {
+            nextRunnable?.let { handler.removeCallbacks(it) }
+            nextRunnable = null
+
+            answerArea.removeAllViews()
+            feedback.text = ""
+            answered = false
+
+            if (currentQuestion >= questions.size) {
+                questionNumber.text = "QUIZ SELESAI"
+                questionText.text =
+                    "Skor kamu: $score dari ${questions.size}"
+                scoreText.text = "Terima kasih sudah bermain 🌸"
+
+                val retry = TextView(this).apply {
+                    text = "Ulangi Quiz"
+                    gravity = Gravity.CENTER
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.WHITE)
+                    setPadding(dp(15), dp(13), dp(15), dp(13))
+                    background = makeBackground(pink, 12)
+
+                    setOnClickListener {
+                        currentQuestion = 0
+                        score = 0
+                        showQuestion()
+                    }
+                }
+
+                answerArea.addView(retry)
+                return
+            }
+
+            val question = questions[currentQuestion]
+
+            questionNumber.text =
+                "PERTANYAAN ${currentQuestion + 1} / ${questions.size}"
+
+            questionText.text = question.first
+            scoreText.text = "Skor: $score"
+
+            question.second.forEachIndexed { index, answer ->
+                val button = TextView(this).apply {
+                    text = answer
+                    textSize = 14f
+                    gravity = Gravity.CENTER_VERTICAL
+                    setTextColor(dark)
+                    setPadding(dp(14), dp(13), dp(14), dp(13))
+                    background = makeBackground(light, 12)
+                    isClickable = true
+                    isFocusable = true
+
+                    setOnClickListener {
+                        if (answered) return@setOnClickListener
+                        answered = true
+
+                        if (index == question.third) {
+                            score++
+                            feedback.text = "Benar! 🎉"
+                            feedback.setTextColor(
+                                Color.rgb(35, 145, 85)
+                            )
+                        } else {
+                            feedback.text =
+                                "Belum tepat. Jawaban: ${question.second[question.third]}"
+                            feedback.setTextColor(
+                                Color.rgb(190, 65, 75)
+                            )
+                        }
+
+                        scoreText.text = "Skor: $score"
+
+                        nextRunnable = Runnable {
+                            currentQuestion++
+                            showQuestion()
+                        }
+
+                        handler.postDelayed(nextRunnable!!, 1100)
+                    }
+                }
+
+                answerArea.addView(
+                    button,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        dp(46)
+                    ).apply {
+                        bottomMargin = dp(8)
+                    }
+                )
+            }
+        }
+
+        showQuestion()
+    }
+
+    // ==========================================
+    // GALLERY
+    // ==========================================
+
+    private fun showGallery(parent: LinearLayout) {
+        parent.addView(
+            makeText(
+                "Koleksi album dan momen JKT48.",
+                14f,
+                Color.DKGRAY
+            ).apply {
+                setPadding(0, dp(10), 0, dp(15))
+            }
+        )
+
+        addSectionTitle(parent, "▣ Album Gallery")
+
+        addInfoCard(
+            parent,
+            "Member Moments",
+            "Album khusus momen para member JKT48.",
+            "📸"
+        )
+
+        addInfoCard(
+            parent,
+            "Theater Memories",
+            "Kumpulan kenangan pertunjukan theater.",
+            "🎭"
+        )
+
+        addInfoCard(
+            parent,
+            "Event Collection",
+            "Album dokumentasi event dan kegiatan JKT48.",
+            "🎤"
+        )
+
+        addInfoCard(
+            parent,
+            "Galeri sedang disiapkan",
+            "Foto resmi akan ditambahkan setelah sumber dan izin penggunaannya diperiksa.",
+            "🌸"
+        )
+    }
+
+    // ==========================================
+    // NEWS
+    // ==========================================
+
+    private fun showNews(parent: LinearLayout) {
+        parent.addView(
+            makeText(
+                "Informasi dan kabar JKT48.",
+                14f,
+                Color.DKGRAY
+            ).apply {
+                setPadding(0, dp(10), 0, dp(15))
+            }
+        )
+
+        addSectionTitle(parent, "♫ Universe News")
+
+        val news = listOf(
+            Triple(
+                "04 NOV 2026",
+                "Theater Special Charity Show",
+                "Informasi pertunjukan spesial JKT48."
+            ),
+            Triple(
+                "29 OCT 2026",
+                "1st Generation Special Stage",
+                "Homecoming: Where It All Began."
+            ),
+            Triple(
+                "28 OCT 2026",
+                "Pengumuman Video Call",
+                "Informasi penggantian member Helisma Putri."
+            ),
+            Triple(
+                "27 OCT 2026",
+                "OFC Event Sudden Versus #4",
+                "Informasi event Mancing Ikuzo!."
+            ),
+            Triple(
+                "26 OCT 2026",
+                "2-Shot Mini Tour",
+                "Penjualan tiket Ayo Senyumlah."
+            )
+        )
+
+        news.forEach { item ->
+            addInfoCard(
+                parent,
+                item.second,
+                "${item.first}\n${item.third}",
+                "📰"
+            )
+        }
+
+        addInfoCard(
+            parent,
+            "Sumber berita",
+            "Periksa situs resmi JKT48 untuk pengumuman dan informasi terbaru.",
+            "🌐"
+        )
+    }
+
+    // ==========================================
     // ACTIVITY LIFECYCLE
     // ==========================================
 
@@ -1086,3 +1509,4 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 }
+
