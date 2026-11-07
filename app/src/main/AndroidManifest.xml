@@ -1,15 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:allowBackup="true"
-        android:label="@string/app_name"
+        android:icon="@drawable/file_0000000003fc8211aaf3677245a3628f"
+        android:roundIcon="@drawable/file_0000000003fc8211aaf3677245a3628f"
+        android:label="JKT48 Universe"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="portrait"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -17,5 +20,7 @@
             </intent-filter>
 
         </activity>
+
     </application>
+
 </manifest>
