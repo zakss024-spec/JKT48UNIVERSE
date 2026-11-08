@@ -1370,117 +1370,118 @@ class MainActivity : Activity() {
     }
 
     // ==========================================
-    // CHAT - LOCAL DEMO
+    // GLOBAL CHAT - SUPABASE
     // ==========================================
 
     private fun showChat(parent: LinearLayout) {
-        parent.addView(
-            makeText(
-                "Ruang komunitas JKT48 Universe.",
-                14f,
-                Color.DKGRAY
-            ).apply {
-                setPadding(0, dp(10), 0, dp(15))
+        parent.addView(makeText("Ngobrol bareng pengguna JKT48 Universe.",14f,Color.DKGRAY).apply {
+            setPadding(0,dp(10),0,dp(14))
+        })
+        val area=LinearLayout(this).apply {
+            orientation=LinearLayout.VERTICAL
+            setPadding(dp(13),dp(13),dp(13),dp(13))
+            background=makeBackground(Color.WHITE,18)
+        }
+        val status=makeText("Menghubungkan ke global chat…",12f,Color.GRAY)
+        area.addView(status)
+        val scroll=ScrollView(this).apply { overScrollMode=View.OVER_SCROLL_NEVER }
+        val list=LinearLayout(this).apply {
+            orientation=LinearLayout.VERTICAL
+            setPadding(0,dp(8),0,dp(8))
+        }
+        scroll.addView(list)
+        area.addView(scroll,LinearLayout.LayoutParams(-1,dp(360)))
+        val input=EditText(this).apply {
+            hint="Tulis pesan (maks. 500 karakter)…"
+            textSize=14f; setSingleLine(false); minLines=1; maxLines=4
+            setTextColor(dark); setHintTextColor(Color.GRAY)
+            setPadding(dp(12),dp(10),dp(12),dp(10))
+            background=makeBackground(light,12)
+        }
+        area.addView(input,LinearLayout.LayoutParams(-1,LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin=dp(8) })
+        val send=TextView(this).apply {
+            text="Kirim pesan"; textSize=14f; gravity=Gravity.CENTER
+            typeface=Typeface.DEFAULT_BOLD; setTextColor(Color.WHITE)
+            setPadding(dp(15),dp(12),dp(15),dp(12)); background=makeBackground(pink,12)
+        }
+        area.addView(send,LinearLayout.LayoutParams(-1,dp(46)).apply { topMargin=dp(8) })
+        parent.addView(area,LinearLayout.LayoutParams(-1,LinearLayout.LayoutParams.WRAP_CONTENT))
+
+        var currentUserId:String?=null
+        fun render(items:List<ChatMessage>) {
+            list.removeAllViews()
+            if(items.isEmpty()) {
+                list.addView(makeText("Belum ada pesan. Jadilah yang pertama menyapa! 🌸",13f,Color.GRAY).apply {
+                    gravity=Gravity.CENTER; setPadding(dp(8),dp(35),dp(8),dp(35))
+                })
+                return
             }
-        )
-
-        addInfoCard(
-            parent,
-            "Community Lounge",
-            "Chat masih berupa demo lokal. Pesan belum dikirim ke pengguna lain.",
-            "♡"
-        )
-
-        val chatArea = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(14), dp(14), dp(14), dp(14))
-            background = makeBackground(Color.WHITE, 18)
+            items.forEach { message ->
+                val bubble=LinearLayout(this).apply {
+                    orientation=LinearLayout.VERTICAL
+                    setPadding(dp(11),dp(9),dp(11),dp(9))
+                    background=makeBackground(if(message.senderId==currentUserId) palePink else light,13)
+                }
+                bubble.addView(makeText(message.senderName,12f,pink,true))
+                bubble.addView(makeText(message.body,14f,dark).apply { setPadding(0,dp(3),0,0) })
+                list.addView(bubble,LinearLayout.LayoutParams(-1,LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin=dp(7)
+                })
+            }
+            scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
         }
 
-        val messages = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        var loading=false
+        fun refresh() {
+            if(loading || !area.isAttachedToWindow) return
+            loading=true
+            activityScope.launch {
+                try {
+                    currentUserId=ChatRepository.currentUserId()
+                    val rows=ChatRepository.getLatestMessages()
+                    render(rows)
+                    status.text="Global chat aktif • ${rows.size} pesan terakhir"
+                    status.setTextColor(Color.rgb(35,145,85))
+                } catch(error:Exception) {
+                    status.text="Chat gagal dimuat: ${error.message ?: "Periksa koneksi/login."}"
+                    status.setTextColor(Color.rgb(190,65,75))
+                } finally { loading=false }
+            }
         }
 
-        messages.addView(
-            makeText("Universe Bot", 13f, pink, true)
-        )
-
-        messages.addView(
-            makeText(
-                "Halo! Selamat datang di JKT48 Universe Chat.",
-                14f,
-                dark
-            ).apply {
-                setPadding(0, dp(5), 0, dp(12))
-            }
-        )
-
-        chatArea.addView(messages)
-
-        val input = EditText(this).apply {
-            hint = "Tulis pesan..."
-            textSize = 14f
-            setSingleLine(true)
-            setTextColor(dark)
-            setHintTextColor(Color.GRAY)
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            background = makeBackground(light, 12)
-        }
-
-        chatArea.addView(
-            input,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(48)
-            ).apply {
-                topMargin = dp(10)
-            }
-        )
-
-        val send = TextView(this).apply {
-            text = "Kirim pesan"
-            textSize = 14f
-            gravity = Gravity.CENTER
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            setPadding(dp(15), dp(12), dp(15), dp(12))
-            background = makeBackground(pink, 12)
-
-            setOnClickListener {
-                if (input.text.toString().trim().isEmpty()) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Tulis pesan terlebih dahulu.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                } else {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Chat online tersedia setelah integrasi database.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    input.text.clear()
+        send.setOnClickListener {
+            val body=input.text.toString().trim()
+            when {
+                body.isEmpty() -> Toast.makeText(this,"Tulis pesan terlebih dahulu.",Toast.LENGTH_SHORT).show()
+                body.length>500 -> Toast.makeText(this,"Pesan maksimal 500 karakter.",Toast.LENGTH_SHORT).show()
+                else -> {
+                    send.isEnabled=false
+                    activityScope.launch {
+                        try {
+                            ChatRepository.sendMessage(body)
+                            input.text.clear()
+                            refresh()
+                        } catch(error:Exception) {
+                            Toast.makeText(this@MainActivity,"Gagal mengirim: ${error.message ?: "Coba lagi."}",Toast.LENGTH_LONG).show()
+                        } finally { send.isEnabled=true }
+                    }
                 }
             }
         }
 
-        chatArea.addView(
-            send,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(46)
-            ).apply {
-                topMargin = dp(10)
+        refresh()
+        val poll=object:Runnable {
+            override fun run() {
+                if(!area.isAttachedToWindow) return
+                refresh()
+                handler.postDelayed(this,5000)
             }
-        )
-
-        parent.addView(
-            chatArea,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
+        }
+        handler.postDelayed(poll,5000)
+        area.addOnAttachStateChangeListener(object:View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v:View) = Unit
+            override fun onViewDetachedFromWindow(v:View) { handler.removeCallbacks(poll) }
+        })
     }
 
     // ==========================================
