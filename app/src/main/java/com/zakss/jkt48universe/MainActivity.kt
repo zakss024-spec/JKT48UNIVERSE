@@ -1,6 +1,7 @@
 package com.zakss.jkt48universe
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -22,12 +23,19 @@ import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 @UnstableApi
 class MainActivity : Activity() {
@@ -38,6 +46,9 @@ class MainActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private var progressRunnable: Runnable? = null
     private var introFinished = false
+
+    private val activityScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val pink = Color.rgb(238, 91, 158)
     private val dark = Color.rgb(35, 25, 42)
@@ -668,7 +679,7 @@ class MainActivity : Activity() {
         addInfoCard(
             parent,
             "Member pilihan",
-            "Profil member akan ditambahkan setelah data resmi diverifikasi.",
+            "Profil member tersedia melalui menu Members.",
             "🌸"
         )
 
@@ -746,19 +757,24 @@ class MainActivity : Activity() {
     }
 
     // ==========================================
-    // MEMBERS DIRECTORY
+    // MEMBERS DIRECTORY - SUPABASE
     // ==========================================
 
     private fun showMembersDirectory(parent: LinearLayout) {
+
         var selectedCategory = "Aktif"
         var selectedGeneration = 0
         var searchQuery = ""
+
+        var loadedMembers = emptyList<MemberProfile>()
+        var isLoading = true
+        var loadError: String? = null
 
         val categories = listOf("Aktif", "Trainee", "Alumni")
 
         parent.addView(
             makeText(
-                "Jelajahi member JKT48 berdasarkan status dan generasi.",
+                "Jelajahi profil member JKT48.",
                 14f,
                 Color.DKGRAY
             ).apply {
@@ -786,7 +802,9 @@ class MainActivity : Activity() {
             }
         )
 
-        parent.addView(makeText("Kategori Member", 17f, dark, true))
+        parent.addView(
+            makeText("Kategori Member", 17f, dark, true)
+        )
 
         val categoryRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -866,94 +884,329 @@ class MainActivity : Activity() {
             }
         }
 
+        fun showMemberDetail(member: MemberProfile) {
+            val detail = buildString {
+                append("Nama: ${member.name}\n")
+
+                member.nickname?.let {
+                    append("Panggilan: $it\n")
+                }
+
+                member.generation?.let {
+                    append("Generasi: $it\n")
+                }
+
+                append(
+                    "Status: ${
+                        when (member.status) {
+                            "active" -> "Aktif"
+                            "trainee" -> "Trainee"
+                            else -> "Alumni"
+                        }
+                    }\n"
+                )
+
+                member.team?.let {
+                    append("Tim: $it\n")
+                }
+
+                member.birthDate?.let {
+                    append("Tanggal lahir: $it\n")
+                }
+
+                member.height?.let {
+                    append("Tinggi: $it cm\n")
+                }
+
+                member.bloodType?.let {
+                    append("Golongan darah: $it\n")
+                }
+
+                member.graduationDate?.let {
+                    append("Tanggal kelulusan: $it\n")
+                }
+
+                member.bio?.let {
+                    append("\n$it")
+                }
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle(member.name)
+                .setMessage(detail)
+                .setPositiveButton("Tutup", null)
+                .show()
+        }
+
+        lateinit var loadMembers: () -> Unit
+
         fun refreshResults() {
             resultArea.removeAllViews()
 
-            val categoryDescription = when (selectedCategory) {
-                "Aktif" -> "Member yang masih aktif."
-                "Trainee" -> "Member yang berstatus trainee."
-                else -> "Member yang telah lulus."
+            val statusFilter = when (selectedCategory) {
+                "Aktif" -> "active"
+                "Trainee" -> "trainee"
+                else -> "alumni"
             }
+
+            val generationText =
+                if (selectedGeneration == 0) {
+                    "Semua generasi"
+                } else {
+                    "Generasi $selectedGeneration"
+                }
 
             resultArea.addView(
                 makeText(
-                    "$selectedCategory • ${
-                        if (selectedGeneration == 0) {
-                            "Semua generasi"
-                        } else {
-                            "Generasi $selectedGeneration"
-                        }
-                    }",
+                    "$selectedCategory • $generationText",
                     15f,
                     dark,
                     true
                 )
             )
 
-            resultArea.addView(
-                makeText(
-                    categoryDescription,
-                    12f,
-                    Color.DKGRAY
-                ).apply {
-                    setPadding(0, dp(5), 0, dp(12))
-                }
-            )
+            if (isLoading) {
+                resultArea.addView(
+                    makeText(
+                        "Mengambil data dari Supabase...",
+                        13f,
+                        Color.DKGRAY
+                    ).apply {
+                        setPadding(0, dp(8), 0, dp(10))
+                    }
+                )
 
-            val emptyCard = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                setPadding(dp(20), dp(25), dp(20), dp(25))
-                background = makeBackground(Color.WHITE, 18)
+                resultArea.addView(
+                    ProgressBar(this).apply {
+                        isIndeterminate = true
+                    }
+                )
+                return
             }
 
-            emptyCard.addView(
-                makeText("🌸", 38f, pink).apply {
-                    gravity = Gravity.CENTER
+            if (loadError != null) {
+                val errorCard = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(18), dp(18), dp(18), dp(18))
+                    background = makeBackground(Color.WHITE, 18)
                 }
-            )
 
-            emptyCard.addView(
+                errorCard.addView(
+                    makeText(
+                        "Gagal mengambil data member",
+                        16f,
+                        dark,
+                        true
+                    )
+                )
+
+                errorCard.addView(
+                    makeText(
+                        loadError ?: "Periksa koneksi internet.",
+                        13f,
+                        Color.DKGRAY
+                    ).apply {
+                        setPadding(0, dp(8), 0, dp(12))
+                    }
+                )
+
+                val retryButton = TextView(this).apply {
+                    text = "Coba lagi"
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE)
+                    typeface = Typeface.DEFAULT_BOLD
+                    setPadding(dp(14), dp(12), dp(14), dp(12))
+                    background = makeBackground(pink, 12)
+
+                    setOnClickListener {
+                        loadMembers()
+                    }
+                }
+
+                errorCard.addView(retryButton)
+                resultArea.addView(errorCard)
+                return
+            }
+
+            val filteredMembers = loadedMembers.filter { member ->
+
+                val matchesStatus =
+                    member.status == statusFilter
+
+                val matchesGeneration =
+                    selectedGeneration == 0 ||
+                        member.generation == selectedGeneration
+
+                val matchesSearch =
+                    searchQuery.isBlank() ||
+                        member.name.contains(
+                            searchQuery,
+                            ignoreCase = true
+                        ) ||
+                        (member.nickname?.contains(
+                            searchQuery,
+                            ignoreCase = true
+                        ) == true)
+
+                matchesStatus &&
+                    matchesGeneration &&
+                    matchesSearch
+            }
+
+            resultArea.addView(
                 makeText(
-                    "Data Member Sedang Disiapkan",
-                    16f,
-                    dark,
+                    "${filteredMembers.size} member ditemukan",
+                    13f,
+                    pink,
                     true
                 ).apply {
-                    gravity = Gravity.CENTER
-                    setPadding(0, dp(10), 0, dp(5))
+                    setPadding(0, dp(8), 0, dp(12))
                 }
             )
 
-            val description = when {
-                searchQuery.isNotBlank() ->
-                    "Pencarian \"$searchQuery\" belum menemukan data."
+            if (filteredMembers.isEmpty()) {
+                val emptyCard = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    setPadding(dp(20), dp(25), dp(20), dp(25))
+                    background = makeBackground(Color.WHITE, 18)
+                }
 
-                selectedGeneration != 0 ->
-                    "Data member Generasi $selectedGeneration belum dimasukkan."
+                emptyCard.addView(
+                    makeText("🌸", 38f, pink).apply {
+                        gravity = Gravity.CENTER
+                    }
+                )
 
-                else ->
-                    "Daftar member dan foto resmi akan ditambahkan setelah data diverifikasi."
+                emptyCard.addView(
+                    makeText(
+                        "Member tidak ditemukan",
+                        16f,
+                        dark,
+                        true
+                    ).apply {
+                        gravity = Gravity.CENTER
+                        setPadding(0, dp(10), 0, dp(5))
+                    }
+                )
+
+                emptyCard.addView(
+                    makeText(
+                        "Coba ubah kategori, generasi, atau kata pencarian.",
+                        13f,
+                        Color.DKGRAY
+                    ).apply {
+                        gravity = Gravity.CENTER
+                    }
+                )
+
+                resultArea.addView(emptyCard)
+                return
             }
 
-            emptyCard.addView(
-                makeText(
-                    description,
-                    13f,
-                    Color.DKGRAY
-                ).apply {
-                    gravity = Gravity.CENTER
-                    setPadding(0, dp(5), 0, 0)
-                }
-            )
+            filteredMembers.forEach { member ->
 
-            resultArea.addView(
-                emptyCard,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(dp(15), dp(15), dp(15), dp(15))
+                    background = makeBackground(Color.WHITE, 17)
+                    isClickable = true
+                    isFocusable = true
+
+                    setOnClickListener {
+                        showMemberDetail(member)
+                    }
+                }
+
+                val initials = member.name
+                    .split(" ")
+                    .filter { it.isNotBlank() }
+                    .take(2)
+                    .joinToString("") {
+                        it.first().uppercase()
+                    }
+
+                val avatar = TextView(this).apply {
+                    text = initials
+                    textSize = 17f
+                    typeface = Typeface.DEFAULT_BOLD
+                    gravity = Gravity.CENTER
+                    setTextColor(pink)
+                    background = makeBackground(palePink, 50)
+                }
+
+                card.addView(
+                    avatar,
+                    LinearLayout.LayoutParams(
+                        dp(52),
+                        dp(52)
+                    ).apply {
+                        marginEnd = dp(13)
+                    }
                 )
-            )
+
+                val information = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                }
+
+                information.addView(
+                    makeText(member.name, 15f, dark, true)
+                )
+
+                information.addView(
+                    makeText(
+                        buildString {
+                            append(member.nickname ?: "Member")
+
+                            member.generation?.let {
+                                append(" • Gen $it")
+                            }
+
+                            member.team?.let {
+                                append(" • Team $it")
+                            }
+                        },
+                        12f,
+                        Color.DKGRAY
+                    ).apply {
+                        setPadding(0, dp(4), 0, dp(5))
+                    }
+                )
+
+                val statusLabel = when (member.status) {
+                    "active" -> "AKTIF"
+                    "trainee" -> "TRAINEE"
+                    else -> "ALUMNI"
+                }
+
+                information.addView(
+                    makeText(statusLabel, 10f, pink, true)
+                )
+
+                card.addView(
+                    information,
+                    LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+                )
+
+                card.addView(
+                    makeText("›", 26f, pink, true)
+                )
+
+                resultArea.addView(
+                    card,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        bottomMargin = dp(10)
+                    }
+                )
+            }
 
             animateIn(resultArea)
         }
@@ -1005,6 +1258,7 @@ class MainActivity : Activity() {
                 button.setOnClickListener {
                     selectedCategory = category
                     selectedGeneration = 0
+
                     refreshCategoryButtons()
                     refreshGenerationButtons()
                     refreshResults()
@@ -1020,6 +1274,28 @@ class MainActivity : Activity() {
                         marginEnd = dp(5)
                     }
                 )
+            }
+        }
+
+        loadMembers = {
+            isLoading = true
+            loadError = null
+            refreshResults()
+
+            activityScope.launch {
+                try {
+                    loadedMembers =
+                        MemberRepository.getAllMembers()
+
+                    loadError = null
+
+                } catch (error: Exception) {
+                    loadError =
+                        error.message ?: "Koneksi Supabase gagal."
+                }
+
+                isLoading = false
+                refreshResults()
             }
         }
 
@@ -1046,7 +1322,7 @@ class MainActivity : Activity() {
 
         refreshCategoryButtons()
         refreshGenerationButtons()
-        refreshResults()
+        loadMembers()
     }
 
     // ==========================================
@@ -1505,6 +1781,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        activityScope.cancel()
         releasePlayer()
         super.onDestroy()
     }
