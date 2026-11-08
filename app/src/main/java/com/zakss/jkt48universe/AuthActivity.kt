@@ -7,13 +7,21 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.*
-import io.github.jan.supabase.auth.providers.Email
+
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonPrimitive
 
 class AuthActivity : Activity() {
 
@@ -43,7 +51,6 @@ class AuthActivity : Activity() {
         window.statusBarColor = dark
         window.navigationBarColor = dark
 
-        // Periksa sesi yang tersimpan.
         scope.launch {
             try {
                 val session =
@@ -60,14 +67,17 @@ class AuthActivity : Activity() {
         }
     }
 
-    private fun background(color: Int, radius: Int): GradientDrawable {
+    private fun makeBackground(
+        color: Int,
+        radius: Int
+    ): GradientDrawable {
         return GradientDrawable().apply {
             setColor(color)
             cornerRadius = dp(radius).toFloat()
         }
     }
 
-    private fun text(
+    private fun makeText(
         value: String,
         size: Float,
         color: Int,
@@ -77,27 +87,31 @@ class AuthActivity : Activity() {
             text = value
             textSize = size
             setTextColor(color)
-            if (bold) typeface = Typeface.DEFAULT_BOLD
+
+            if (bold) {
+                typeface = Typeface.DEFAULT_BOLD
+            }
         }
     }
 
-    private fun input(hintText: String, password: Boolean = false): EditText {
+    private fun makeInput(
+        hintText: String,
+        password: Boolean = false
+    ): EditText {
         return EditText(this).apply {
             hint = hintText
             textSize = 15f
             setTextColor(dark)
             setHintTextColor(Color.GRAY)
             setPadding(dp(15), dp(12), dp(15), dp(12))
-            background = background(Color.WHITE, 14)
+            background = makeBackground(Color.WHITE, 14)
             maxLines = 1
 
-            if (password) {
-                inputType =
-                    android.text.InputType.TYPE_CLASS_TEXT or
+            inputType = if (password) {
+                android.text.InputType.TYPE_CLASS_TEXT or
                     android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
             } else {
-                inputType =
-                    android.text.InputType.TYPE_CLASS_TEXT
+                android.text.InputType.TYPE_CLASS_TEXT
             }
         }
     }
@@ -118,24 +132,24 @@ class AuthActivity : Activity() {
         setContentView(scroll)
 
         container.addView(
-            text("JKT48 Universe 🌸", 28f, pink, true).apply {
+            makeText("JKT48 Universe 🌸", 28f, pink, true).apply {
                 gravity = Gravity.CENTER
             }
         )
 
         container.addView(
-            text("Your world of idols ✨", 14f, dark).apply {
+            makeText("Your world of idols ✨", 14f, dark).apply {
                 gravity = Gravity.CENTER
                 setPadding(0, dp(7), 0, dp(28))
             }
         )
 
         container.addView(
-            text("Selamat datang!", 23f, dark, true)
+            makeText("Selamat datang!", 23f, dark, true)
         )
 
         container.addView(
-            text(
+            makeText(
                 "Masuk atau buat akun untuk melanjutkan.",
                 14f,
                 Color.DKGRAY
@@ -144,19 +158,19 @@ class AuthActivity : Activity() {
             }
         )
 
-        usernameInput = input("Username")
-        emailInput = input("Alamat email")
-        passwordInput = input("Password", true)
-        confirmInput = input("Ulangi password", true)
+        usernameInput = makeInput("Username")
+        emailInput = makeInput("Alamat email")
+        passwordInput = makeInput("Password", true)
+        confirmInput = makeInput("Ulangi password", true)
 
-        fun addField(field: EditText, bottom: Int = 12) {
+        fun addField(field: EditText) {
             container.addView(
                 field,
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     dp(54)
                 ).apply {
-                    bottomMargin = dp(bottom)
+                    bottomMargin = dp(12)
                 }
             )
         }
@@ -166,7 +180,8 @@ class AuthActivity : Activity() {
         addField(passwordInput)
         addField(confirmInput)
 
-        message = text("", 13f, Color.rgb(180, 50, 70))
+        message = makeText("", 13f, Color.rgb(180, 50, 70))
+
         container.addView(
             message,
             LinearLayout.LayoutParams(
@@ -177,16 +192,17 @@ class AuthActivity : Activity() {
             }
         )
 
-        submitButton = text(
+        submitButton = makeText(
             "LOGIN",
             15f,
             Color.WHITE,
             true
         ).apply {
             gravity = Gravity.CENTER
-            background = background(pink, 15)
+            background = makeBackground(pink, 15)
             isClickable = true
             setPadding(0, dp(15), 0, dp(15))
+
             setOnClickListener {
                 if (isRegisterMode) {
                     register()
@@ -204,7 +220,7 @@ class AuthActivity : Activity() {
             )
         )
 
-        modeButton = text(
+        modeButton = makeText(
             "Belum punya akun? Daftar",
             14f,
             pink,
@@ -212,6 +228,7 @@ class AuthActivity : Activity() {
         ).apply {
             gravity = Gravity.CENTER
             setPadding(0, dp(22), 0, dp(12))
+
             setOnClickListener {
                 isRegisterMode = !isRegisterMode
                 updateMode()
@@ -225,16 +242,13 @@ class AuthActivity : Activity() {
 
     private fun updateMode() {
         usernameInput.visibility =
-            if (isRegisterMode) android.view.View.VISIBLE
-            else android.view.View.GONE
+            if (isRegisterMode) View.VISIBLE else View.GONE
 
         confirmInput.visibility =
-            if (isRegisterMode) android.view.View.VISIBLE
-            else android.view.View.GONE
+            if (isRegisterMode) View.VISIBLE else View.GONE
 
         submitButton.text =
-            if (isRegisterMode) "BUAT AKUN"
-            else "LOGIN"
+            if (isRegisterMode) "BUAT AKUN" else "LOGIN"
 
         modeButton.text =
             if (isRegisterMode) {
@@ -244,6 +258,7 @@ class AuthActivity : Activity() {
             }
 
         message.text = ""
+        message.setTextColor(Color.rgb(180, 50, 70))
     }
 
     private fun setBusy(value: Boolean) {
@@ -283,6 +298,7 @@ class AuthActivity : Activity() {
             } catch (error: Exception) {
                 message.text =
                     "Login gagal: ${error.message ?: "Periksa email dan password."}"
+
                 setBusy(false)
             }
         }
@@ -301,8 +317,11 @@ class AuthActivity : Activity() {
             return
         }
 
-        if (email.isBlank() || !android.util.Patterns.EMAIL_ADDRESS
-                .matcher(email).matches()) {
+        if (
+            email.isBlank() ||
+            !android.util.Patterns.EMAIL_ADDRESS
+                .matcher(email).matches()
+        ) {
             message.text = "Masukkan alamat email yang valid."
             return
         }
@@ -324,22 +343,28 @@ class AuthActivity : Activity() {
                 SupabaseClient.client.auth.signUpWith(Email) {
                     this.email = email
                     this.password = password
-                    data = kotlinx.serialization.json.buildJsonObject {
-                        put("username", username)
+
+                    data = buildJsonObject {
+                        put(
+                            "username",
+                            JsonPrimitive(username)
+                        )
                     }
                 }
+
+                isRegisterMode = false
+                updateMode()
 
                 message.setTextColor(Color.rgb(35, 145, 85))
                 message.text =
                     "Pendaftaran berhasil! Periksa email untuk verifikasi, lalu login."
 
-                isRegisterMode = false
-                updateMode()
                 setBusy(false)
 
             } catch (error: Exception) {
                 message.text =
                     "Pendaftaran gagal: ${error.message ?: "Coba lagi."}"
+
                 setBusy(false)
             }
         }
